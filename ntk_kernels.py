@@ -66,3 +66,4 @@ def generate_synthetic_data(N, d_in, rank_true, seed=42):
     return X, G_target, D_target_sq
 
 
+
