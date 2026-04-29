@@ -1,4 +1,4 @@
-"""Top-level orchestrator. Runs all sweeps with multi-seed and writes JSON to results_v2/raw."""
+"""Top-level orchestrator. Runs all sweeps with multi-seed and writes JSON to ../results/."""
 from __future__ import annotations
 import argparse
 import sys
@@ -15,7 +15,7 @@ from runners.phase_transition import PhaseConfig, run_sweep as run_phase
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="../results_v2/raw")
+    ap.add_argument("--out", default="../results")
     ap.add_argument("--seeds", type=int, default=5)
     ap.add_argument("--device", default="cpu", choices=("cpu", "cuda"))
     ap.add_argument("--include", default="equiv,spectral,rank,phase",

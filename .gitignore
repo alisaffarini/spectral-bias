@@ -14,7 +14,7 @@ __pycache__/
 *.fdb_latexmk
 
 # Local data caches
-experiments/data/
+experiment/data/
 
 # Editor / OS junk
 .DS_Store
@@ -23,4 +23,4 @@ experiments/data/
 *.swp
 
 # Local-only run logs (keep the JSON outputs, drop the .log noise)
-results_v2/*.log
+results/*.log

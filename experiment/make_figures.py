@@ -1,4 +1,4 @@
-"""Generate publication figures from JSON outputs in results_v2/raw."""
+"""Generate publication figures from JSON outputs in ../results/."""
 from __future__ import annotations
 import json
 from pathlib import Path
@@ -8,7 +8,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 ROOT = Path(__file__).parent.parent
-RAW = ROOT / "results_v2" / "raw"
+RAW = ROOT / "results"
 OUT = ROOT / "paper"  # save figures next to the .tex
 OUT.mkdir(exist_ok=True, parents=True)
 
