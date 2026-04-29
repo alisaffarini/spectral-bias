@@ -69,36 +69,44 @@ def fig_equivalence():
 # Figure: Spectral implicit bias.
 # -----------------------------------------------------------------------------
 def fig_spectral_bias():
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    panel_titles = [r"depth $L=1$", r"depth $L=2$"]
+    """Three-panel figure: N=30, N=100, N=1000 each with L=1 and L=2 overlaid."""
+    fig, axes = plt.subplots(1, 3, figsize=(15, 4.5), sharey=False)
+    Ns = [30, 100, 1000]
+    colors = {1: "tab:blue", 2: "tab:orange"}
+    for c, N in enumerate(Ns):
+        for L in [1, 2]:
+            path = RAW / f"spectral_bias_N{N}_L{L}.json"
+            if not path.exists():
+                continue
+            data = _load(path)
+            eigvals_K = np.array(data[0]["eigvals_K"])
+            deltas = np.stack([np.array(d["delta"]) for d in data], axis=0)
+            final = np.abs(deltas[:, -1, :])
+            m = final.mean(axis=0); s = final.std(axis=0)
 
-    for c, L in enumerate([1, 2]):
-        path = RAW / f"spectral_bias_N30_L{L}.json"
-        if not path.exists():
-            continue
-        data = _load(path)
-        eigvals_K = np.array(data[0]["eigvals_K"])
-        deltas = np.stack([np.array(d["delta"]) for d in data], axis=0)
-        # Final-step displacement magnitude.
-        final = np.abs(deltas[:, -1, :])
-        m = final.mean(axis=0)
-        s = final.std(axis=0)
-
-        axes[c].errorbar(eigvals_K, m, yerr=s, fmt="o", capsize=3, lw=1.2, ms=5)
+            axes[c].errorbar(eigvals_K, m, yerr=s, fmt="o", capsize=2,
+                             lw=0.8, ms=3, alpha=0.6, color=colors[L])
+            mask = (eigvals_K > 1e-6) & (m > 1e-6)
+            if mask.sum() >= 4:
+                # Per-seed slopes for honest reporting.
+                slopes = []
+                for d in data:
+                    fi = np.abs(np.array(d["delta"])[-1])
+                    mi = (eigvals_K > 1e-6) & (fi > 1e-6)
+                    if mi.sum() >= 4:
+                        slopes.append(np.polyfit(np.log(eigvals_K[mi]), np.log(fi[mi]), 1)[0])
+                slope_mean = np.mean(slopes); slope_std = np.std(slopes)
+                p = np.polyfit(np.log(eigvals_K[mask]), np.log(m[mask]), 1)
+                xs = np.geomspace(eigvals_K[mask].min(), eigvals_K[mask].max(), 50)
+                axes[c].plot(xs, np.exp(p[1]) * xs ** p[0], "--", color=colors[L],
+                             label=fr"$L={L}$: slope $= {slope_mean:.2f} \pm {slope_std:.2f}$")
         axes[c].set_xscale("log")
         axes[c].set_yscale("log")
         axes[c].set_xlabel(r"kernel eigenvalue $\lambda_i$")
-        axes[c].set_ylabel(r"$|\widetilde G_{ii}(T) - \widetilde G_{ii}(0)|$")
-        axes[c].set_title(panel_titles[c])
-
-        # Power-law fit on the spectrum-vs-displacement for guidance.
-        mask = (eigvals_K > 1e-6) & (m > 1e-6)
-        if mask.sum() >= 3:
-            p = np.polyfit(np.log(eigvals_K[mask]), np.log(m[mask]), 1)
-            xs = np.geomspace(eigvals_K[mask].min(), eigvals_K[mask].max(), 50)
-            axes[c].plot(xs, np.exp(p[1]) * xs ** p[0], "--", color="gray",
-                         label=f"slope = {p[0]:.2f}")
-            axes[c].legend(loc="upper left")
+        if c == 0:
+            axes[c].set_ylabel(r"$|\widetilde G_{ii}(T) - \widetilde G_{ii}(0)|$")
+        axes[c].set_title(f"N = {N}")
+        axes[c].legend(loc="upper left", fontsize=8)
 
     fig.suptitle(r"Per-mode displacement vs.\ kernel eigenvalue -- mean $\pm$ std over 5 seeds")
     fig.tight_layout()
