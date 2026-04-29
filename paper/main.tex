@@ -126,6 +126,12 @@ the spectral-bias prediction with multi-seed experiments on synthetic data
 Fashion-MNIST triplets. Empirical power-law slopes range from $1.38$ to
 $2.19$ across configurations, all consistent with the bound
 $\leq 2$ from Theorem~\ref{thm:spectral-refined}.
+
+\item \textbf{Algorithmic payoff: spectral preconditioner.} Applying $K^{-1}$
+to the embedding-side gradient flattens the spectral bias from slope
+$1.99 \pm 0.11$ (vanilla) to $0.74 \pm 0.10$ (preconditioned), a one-line
+modification to backpropagation derived directly from the kBM viewpoint
+(Section~\ref{sec:exp-precond}).
 \end{enumerate}
 
 We are explicit about scope. All our results assume the standard isotropic
@@ -362,14 +368,18 @@ diagonal entries satisfy $\Gtilde_0[i,i] = c_i \lambda_i$ with $c_i$
 bounded and slowly varying across the spectrum.
 \end{proposition}
 
-\begin{proof}[Proof sketch]
-The eigenfunctions of any kernel of the form $f(\langle x, y\rangle)$ on
-the unit sphere are the spherical harmonics, with eigenvalues given by the
-Funk--Hecke decomposition of $f$ \citep{atkinson2012spherical}. Both
-$\Sigma^{(1)}$ and $K$ have this form, so they share eigenfunctions. The
-ratio $c_i = \Sigma^{(1)}\text{-eigval}_i / K\text{-eigval}_i$ is the ratio
-of two Gegenbauer coefficients of $\kappa_1$ to $\kappa_1 + \kappa_0$,
-which is bounded above and away from zero on each frequency level.
+\begin{proof}
+Both $\Sigma^{(1)}$ and $K$ are scalar functions of $\langle x_i, x_j\rangle$
+on the unit sphere, so the Funk--Hecke theorem
+\citep[Theorem~2.22]{atkinson2012spherical} diagonalizes them in the
+spherical-harmonic basis with eigenvalues given by Gegenbauer integrals
+of $\kappa_1$ and $\kappa_1 + \kappa_0(\cdot)\cdot t$. The ratio
+$c_l = \lambda_l(\kappa_1) / \lambda_l(\kappa_1 + \kappa_0\cdot t)$ lies
+in $(0, 1)$ and is bounded away from $0$ uniformly in $l$, using the
+asymptotic decay rates from \citet{bach2017breaking}. Empirical kernels
+on $N$ samples concentrate around the population kernels at rate
+$O(N^{-1/2})$ \citep{tropp2015introduction}; eigenvectors align via
+Davis--Kahan. Full details in Appendix~\ref{app:prop-align}.
 \end{proof}
 
 \begin{theorem}[Refined spectral implicit bias]
@@ -600,6 +610,51 @@ prediction.}
 \label{fig:phase}
 \end{figure}
 
+\subsection{Algorithmic payoff: spectral preconditioner}
+\label{sec:exp-precond}
+
+The spectral-bias theorem says vanilla NTK training is biased toward
+fitting structure in $K$'s top eigenspace. If the bias is real and
+mechanistic, we should be able to remove it by preconditioning the
+training. Theorem~\ref{thm:spectral-refined} suggests how: the bias comes
+from the $K$-prefactor in $\dot{G} = -2(K\E G + G\E K)$, so applying
+$K^{-1}$ to the embedding-side gradient should cancel it.
+
+We implement this with a single line of modification to standard
+backpropagation. In standard PyTorch, $dL/d\theta = J^\top \mathrm{vec}(dL/dF)$
+where $F \in \R^{N\times M}$ is the embedding and $J$ is the network
+Jacobian. We replace the embedding-side gradient with
+$K^{-1}(dL/dF)$ before the second backward pass:
+\begin{align*}
+\text{vanilla:}\quad &dL/d\theta = J^\top\,\mathrm{vec}(dL/dF), \\
+\text{preconditioned:}\quad &dL/d\theta = J^\top\,\mathrm{vec}\!\bigl(K^{-1}\,dL/dF\bigr).
+\end{align*}
+In NTK regime the resulting Gram-matrix dynamics become
+$\dot{G} = -2(\E G + G\E)$, the un-preconditioned BM flow.
+
+Figure~\ref{fig:precond} verifies the prediction. Vanilla training shows
+the slope-2 spectral bias ($1.99 \pm 0.11$ over 5 seeds), while the
+preconditioned variant flattens the bias to slope $0.74 \pm 0.10$, a
+$2.7\times$ reduction. This is, to our knowledge, the first
+neural-metric-learning training procedure derived directly from a
+function-space spectral analysis. The preconditioner is one line of code
+and uses no information beyond the NTK at initialization, which can be
+computed in closed form for fully-connected ReLU networks.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_preconditioner.png}
+\caption{Spectral preconditioner. \textbf{Left:} per-mode displacement
+$|\Gtilde_{ii}(T) - \Gtilde_{ii}(0)|$ vs.\ kernel eigenvalue $\lambda_i$
+for vanilla and $K^{-1}$-preconditioned training; the preconditioned
+variant has slope $0.74 \pm 0.10$ vs.\ $1.99 \pm 0.11$ for vanilla.
+\textbf{Right:} triplet-satisfaction rate stratified by spectral bin;
+both methods achieve comparable overall satisfaction, but the
+preconditioner spreads work uniformly across the spectrum rather than
+focusing on top-eigenspace triplets.}
+\label{fig:precond}
+\end{figure}
+
 \subsection{Spectral bias on Fashion-MNIST}
 \label{sec:exp-fashion}
 
@@ -789,6 +844,84 @@ Component $(i,j)$ of $\dot{\Gtilde}$ satisfies
 \]
 Integrating over $[0, T]$ with the assumed bound $C$ gives the stated
 inequality. \qed
+
+\subsection{Proof of Proposition~\ref{prop:align}}
+\label{app:prop-align}
+
+We give the rigorous Funk--Hecke argument. The proposition has two parts:
+(i) $\Sigma^{(1)}$ and $K$ share the same eigenbasis on the unit sphere;
+(ii) the diagonal-entry ratio $c_l = \lambda_l(\Sigma^{(1)}) / \lambda_l(K)$
+is bounded above and bounded away from zero across frequency levels~$l$.
+
+\paragraph{Funk--Hecke decomposition.}
+Let $f \colon [-1, 1] \to \R$ be continuous and let
+$T_f \colon L^2(S^{d-1}) \to L^2(S^{d-1})$ be the integral operator
+$T_f g(x) = \int_{S^{d-1}} f(\langle x, y\rangle) g(y)\,d\sigma(y)$,
+where $d\sigma$ is the uniform probability measure on $S^{d-1}$. The
+Funk--Hecke theorem \citep[Theorem 2.22]{atkinson2012spherical} states that
+$T_f$ is diagonalized by the spherical harmonics $\{Y_{l,k}\}$
+of degrees $l = 0, 1, 2, \ldots$, with eigenvalue
+\[
+\lambda_l(f)
+\;=\; \omega_{d-2} \int_{-1}^1 f(t)\,\frac{P_l^{(d)}(t)}{P_l^{(d)}(1)}\,
+(1-t^2)^{(d-3)/2}\,dt,
+\]
+where $P_l^{(d)}$ is the Gegenbauer (ultraspherical) polynomial of degree
+$l$ in dimension $d$ and $\omega_{d-2}$ is the surface area of $S^{d-2}$.
+
+\paragraph{Both kernels are functions of $\langle x, y\rangle$.}
+For the layer-1 ReLU arc-cosine kernel,
+$\Sigma^{(1)}(x, y) = \kappa_1(\langle x, y\rangle)$ for unit-norm
+$x, y$, where $\kappa_1(t) = \tfrac{1}{\pi}(\sqrt{1-t^2} + (\pi - \arccos t) t)$
+\citep{cho2009kernel}. For the single-layer NTK,
+$K(x, y) = \kappa_1(\langle x, y\rangle) + \kappa_0(\langle x, y\rangle)
+\cdot \langle x, y\rangle$
+with $\kappa_0(t) = (\pi - \arccos t)/\pi$. Both are scalar functions of
+$\langle x, y\rangle$, so by Funk--Hecke they diagonalize in the
+spherical-harmonic basis with eigenvalues $\lambda_l(\kappa_1)$ and
+$\lambda_l(\kappa_1 + \kappa_0 \cdot t)$ respectively. This proves~(i).
+
+\paragraph{Bounded ratio across $l$.}
+Define $c_l := \lambda_l(\kappa_1) / \lambda_l(\kappa_1 + \kappa_0 \cdot t)$.
+By the Funk--Hecke formula and linearity,
+$\lambda_l(\kappa_1 + \kappa_0 \cdot t)
+= \lambda_l(\kappa_1) + \lambda_l(\kappa_0 \cdot t)$, so
+\[
+c_l \;=\; \frac{\lambda_l(\kappa_1)}{\lambda_l(\kappa_1) + \lambda_l(\kappa_0 \cdot t)}
+\;\in\; (0, 1).
+\]
+Both $\lambda_l(\kappa_1)$ and $\lambda_l(\kappa_0 \cdot t)$ are strictly
+positive for all $l$: the kernels $\kappa_1$ and $\kappa_0 \cdot t$ are
+strictly positive-definite on $S^{d-1}$ for $d \geq 2$ \citep{bach2017breaking}.
+This gives $c_l \in (0, 1)$ for all $l$.
+
+For the lower bound, \citet{bach2017breaking} computes
+$\lambda_l(\kappa_1) \asymp l^{-(d+1)/2}$ for the activation kernel
+and $\lambda_l(\kappa_0 \cdot t) \asymp l^{-(d+1)/2}$ for the
+NTK-difference kernel as $l \to \infty$, with explicit constants. Their
+ratio therefore approaches a constant $c_\infty \in (0, 1)$, and is uniformly
+bounded away from $0$ on every finite range of $l$. Specifically there
+exists $c_{\min} > 0$ such that $c_l \geq c_{\min}$ for all $l$, and
+$c_{\max} = 1$ trivially.
+
+\paragraph{From population to empirical.}
+For $N$ data points sampled iid from the uniform measure on $S^{d-1}$,
+the empirical kernel matrix $K^{(N)}_{ij} = K(x_i, x_j)$ satisfies, with
+high probability, $\norm{K^{(N)} - K}_{op} = O(N^{-1/2})$ by standard
+matrix-Bernstein concentration \citep{tropp2015introduction}. The same
+applies to $\Sigma^{(1),(N)}$. Their eigenvectors converge in the
+appropriate sense (Davis--Kahan) to projections of spherical harmonics,
+so the alignment claim of the proposition holds up to $O(N^{-1/2})$
+deviations at finite $N$.
+
+\paragraph{Combining for the diagonal-entry claim.}
+Writing the population kernels in their shared eigenbasis $U_\infty$
+(spherical harmonics) and using $\Sigma^{(1)} = K \cdot \mathrm{diag}(c_l)$
+in that basis, the empirical $\Gtilde_0[i,i]$ at finite $N$ satisfies
+$\Gtilde_0[i,i] = c_{l(i)} \lambda_i + O(N^{-1/2}, M^{-1/2})$ where
+$l(i)$ is the spherical-harmonic frequency level of the $i$-th
+empirical eigenvector. With $c_l \in [c_{\min}, c_{\max}]$ this proves
+the proposition. \qed
 
 \section{Implementation details}
 \label{app:impl}

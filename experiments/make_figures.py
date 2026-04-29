@@ -217,12 +217,86 @@ def fig_fashion():
     plt.close(fig)
 
 
+def fig_preconditioner():
+    path = RAW / "preconditioner_N50.json"
+    if not path.exists():
+        return
+    data = _load(path)
+    eigvals_K = np.array(data[0]["eigvals_K"])
+    deltas_v = np.stack([np.array(d["delta_vanilla"])[-1] for d in data], axis=0)
+    deltas_p = np.stack([np.array(d["delta_precond"])[-1] for d in data], axis=0)
+    sat_v = np.stack([np.array(d["sat_by_bin_vanilla"]) for d in data], axis=0)
+    sat_p = np.stack([np.array(d["sat_by_bin_precond"]) for d in data], axis=0)
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4.5))
+
+    # Left panel: per-mode displacement scaling, vanilla vs preconditioned
+    ax = axes[0]
+    final_v = np.abs(deltas_v); final_p = np.abs(deltas_p)
+    mv = final_v.mean(axis=0); sv = final_v.std(axis=0)
+    mp = final_p.mean(axis=0); sp = final_p.std(axis=0)
+    ax.errorbar(eigvals_K, mv, yerr=sv, fmt="o", capsize=2, lw=1, ms=4, alpha=0.7,
+                color="tab:blue", label="vanilla")
+    ax.errorbar(eigvals_K, mp, yerr=sp, fmt="s", capsize=2, lw=1, ms=4, alpha=0.7,
+                color="tab:orange", label="preconditioned")
+    # Slopes
+    slopes_v, slopes_p = [], []
+    for d in data:
+        dv = np.abs(np.array(d["delta_vanilla"])[-1]); dp = np.abs(np.array(d["delta_precond"])[-1])
+        mvi = (eigvals_K > 1e-6) & (dv > 1e-6); mpi = (eigvals_K > 1e-6) & (dp > 1e-6)
+        if mvi.sum() >= 4: slopes_v.append(np.polyfit(np.log(eigvals_K[mvi]), np.log(dv[mvi]), 1)[0])
+        if mpi.sum() >= 4: slopes_p.append(np.polyfit(np.log(eigvals_K[mpi]), np.log(dp[mpi]), 1)[0])
+    sv_m = np.mean(slopes_v); sv_s = np.std(slopes_v)
+    sp_m = np.mean(slopes_p); sp_s = np.std(slopes_p)
+    for slope, color in [(sv_m, "tab:blue"), (sp_m, "tab:orange")]:
+        mask = (eigvals_K > 1e-6) & (mv > 1e-6)
+        if mask.sum() >= 3:
+            xs = np.geomspace(eigvals_K[mask].min(), eigvals_K[mask].max(), 50)
+            anchor = mv[mask].mean() if color == "tab:blue" else mp[mask].mean()
+            anchor_x = eigvals_K[mask].mean()
+            const = anchor / (anchor_x ** slope)
+            ax.plot(xs, const * xs ** slope, "--", color=color, alpha=0.5)
+    ax.set_xscale("log"); ax.set_yscale("log")
+    ax.set_xlabel(r"kernel eigenvalue $\lambda_i$")
+    ax.set_ylabel(r"$|\widetilde G_{ii}(T) - \widetilde G_{ii}(0)|$")
+    ax.legend(loc="upper left",
+              title=fr"vanilla: ${sv_m:.2f} \pm {sv_s:.2f}$" + "\n"
+                    + fr"precond: ${sp_m:.2f} \pm {sp_s:.2f}$",
+              fontsize=9, title_fontsize=9)
+    ax.set_title("Per-mode displacement scaling")
+
+    # Right panel: triplet satisfaction by mode-bin
+    ax = axes[1]
+    n_bins = sat_v.shape[1]
+    x = np.arange(n_bins)
+    width = 0.35
+    sat_v_m = np.nanmean(sat_v, axis=0); sat_v_s = np.nanstd(sat_v, axis=0)
+    sat_p_m = np.nanmean(sat_p, axis=0); sat_p_s = np.nanstd(sat_p, axis=0)
+    ax.bar(x - width/2, sat_v_m, width, yerr=sat_v_s, capsize=3, alpha=0.7,
+           color="tab:blue", label="vanilla")
+    ax.bar(x + width/2, sat_p_m, width, yerr=sat_p_s, capsize=3, alpha=0.7,
+           color="tab:orange", label="preconditioned")
+    ax.set_xlabel(r"K-eigenvalue mode bin (top $\to$ bottom)")
+    ax.set_ylabel("triplet satisfaction rate")
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"bin {i+1}" for i in range(n_bins)])
+    ax.legend(loc="lower left", fontsize=9)
+    ax.set_title("Triplet satisfaction by spectral bin")
+    ax.set_ylim(0, 1.05)
+
+    fig.suptitle(r"Spectral preconditioner: kBM theory $\to$ algorithm (mean $\pm$ std, 5 seeds)")
+    fig.tight_layout()
+    fig.savefig(OUT / "fig_preconditioner.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main():
     fig_equivalence()
     fig_spectral_bias()
     fig_rank_vs_width()
     fig_phase()
     fig_fashion()
+    fig_preconditioner()
     print("figures written to", OUT)
 
 
