@@ -217,6 +217,34 @@ def fig_fashion():
     plt.close(fig)
 
 
+def _slope_panel(ax, data, color_v="tab:blue", color_p="tab:orange", title=""):
+    """Helper: scatter + power-law fit, vanilla vs preconditioned."""
+    eigvals_K = np.array(data[0]["eigvals_K"])
+    deltas_v = np.stack([np.array(d["delta_vanilla"])[-1] for d in data], axis=0)
+    deltas_p = np.stack([np.array(d["delta_precond"])[-1] for d in data], axis=0)
+    final_v = np.abs(deltas_v); final_p = np.abs(deltas_p)
+    mv = final_v.mean(axis=0); sv_e = final_v.std(axis=0)
+    mp = final_p.mean(axis=0); sp_e = final_p.std(axis=0)
+    ax.errorbar(eigvals_K, mv, yerr=sv_e, fmt="o", capsize=2, lw=1, ms=3,
+                alpha=0.7, color=color_v, label="vanilla")
+    ax.errorbar(eigvals_K, mp, yerr=sp_e, fmt="s", capsize=2, lw=1, ms=3,
+                alpha=0.7, color=color_p, label="preconditioned")
+    sv, sp = [], []
+    for d in data:
+        dv = np.abs(np.array(d["delta_vanilla"])[-1])
+        dp = np.abs(np.array(d["delta_precond"])[-1])
+        mvi = (eigvals_K > 1e-6) & (dv > 1e-6); mpi = (eigvals_K > 1e-6) & (dp > 1e-6)
+        if mvi.sum() >= 4: sv.append(np.polyfit(np.log(eigvals_K[mvi]), np.log(dv[mvi]), 1)[0])
+        if mpi.sum() >= 4: sp.append(np.polyfit(np.log(eigvals_K[mpi]), np.log(dp[mpi]), 1)[0])
+    ax.set_xscale("log"); ax.set_yscale("log")
+    ax.set_xlabel(r"kernel eigenvalue $\lambda_i$")
+    ax.legend(loc="upper left",
+              title=fr"vanilla: ${np.mean(sv):.2f} \pm {np.std(sv):.2f}$" + "\n"
+                    + fr"precond: ${np.mean(sp):.2f} \pm {np.std(sp):.2f}$",
+              fontsize=8, title_fontsize=8)
+    ax.set_title(title)
+
+
 def fig_preconditioner():
     path = RAW / "preconditioner_N50.json"
     if not path.exists():
@@ -290,6 +318,20 @@ def fig_preconditioner():
     plt.close(fig)
 
 
+def fig_cifar10():
+    path = RAW / "cifar10.json"
+    if not path.exists():
+        return
+    data = _load(path)
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    _slope_panel(ax, data,
+                 title=r"CIFAR-10 (ResNet-18 features, depth-2 head)")
+    ax.set_ylabel(r"$|\widetilde G_{ii}(T) - \widetilde G_{ii}(0)|$")
+    fig.tight_layout()
+    fig.savefig(OUT / "fig_cifar10.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main():
     fig_equivalence()
     fig_spectral_bias()
@@ -297,6 +339,7 @@ def main():
     fig_phase()
     fig_fashion()
     fig_preconditioner()
+    fig_cifar10()
     print("figures written to", OUT)
 
 

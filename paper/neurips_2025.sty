@@ -1,0 +1,104 @@
+% NeurIPS 2025 style file (minimal approximation)
+% Based on the standard NeurIPS submission template.
+% This is a self-contained approximation; for the official submission you
+% should replace this with the official sty downloaded from the conference.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{neurips_2025}[2025/04/01 v1.0 NeurIPS 2025 minimal style]
+
+\RequirePackage{geometry}
+\geometry{
+  letterpaper,
+  textheight=9.0in,
+  textwidth=5.5in,
+  top=1.0in,
+  headheight=12pt,
+  headsep=25pt,
+  footskip=30pt
+}
+
+\RequirePackage{xcolor}
+\RequirePackage{amsmath,amssymb,amsthm}
+\RequirePackage{graphicx}
+\RequirePackage{natbib}
+\RequirePackage{hyperref}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+% Title and author formatting matching NeurIPS look
+\renewcommand{\@maketitle}{%
+  \newpage
+  \null
+  \vskip 2em
+  \begin{center}%
+    {\LARGE \bf \@title \par}%
+    \vskip 1.5em
+    {\large
+      \begin{tabular}[t]{c}%
+        \@author
+      \end{tabular}\par}%
+  \end{center}%
+  \par
+  \vskip 1.5em
+}
+
+% Abstract formatting
+\renewenvironment{abstract}{%
+  \centerline{\large\bf Abstract}%
+  \begin{quote}\small\noindent\ignorespaces
+}{%
+  \par\end{quote}
+}
+
+% Section formatting (smaller spacing than article default)
+\renewcommand{\section}{\@startsection
+  {section}{1}{0pt}%
+  {-2.5ex \@plus -0.7ex \@minus -0.2ex}%
+  {1.3ex \@plus 0.4ex \@minus 0.1ex}%
+  {\large\bf\raggedright}}
+\renewcommand{\subsection}{\@startsection
+  {subsection}{2}{0pt}%
+  {-2.0ex \@plus -0.5ex \@minus -0.2ex}%
+  {1.0ex \@plus 0.3ex \@minus 0.1ex}%
+  {\normalsize\bf\raggedright}}
+\renewcommand{\subsubsection}{\@startsection
+  {subsubsection}{3}{0pt}%
+  {-1.5ex \@plus -0.5ex \@minus -0.2ex}%
+  {0.5ex \@plus 0.2ex}%
+  {\normalsize\bf\raggedright}}
+
+% Reduce paragraph spacing
+\setlength{\parskip}{0pt plus 0.2pt}
+
+% Small-caps for the conference name
+\newcommand{\NeurIPSname}{NeurIPS 2025}
+
+% Submission/final mode toggle (mimicking the official sty)
+\newif\if@neuripsfinal\@neuripsfinalfalse
+\DeclareOption{final}{\@neuripsfinaltrue}
+\ProcessOptions\relax
+
+\if@neuripsfinal\else
+  % Anonymous submission: hide author block in submission mode
+  \renewcommand{\@maketitle}{%
+    \newpage
+    \null
+    \vskip 2em
+    \begin{center}%
+      {\LARGE \bf \@title \par}%
+      \vskip 1.5em
+      {\large \bf Anonymous Authors\par}
+      \vskip 0.5em
+      {\normalsize Paper under double-blind review\par}
+    \end{center}%
+    \par
+    \vskip 1.5em
+  }
+\fi
+
+\endinput

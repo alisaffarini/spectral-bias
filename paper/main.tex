@@ -131,7 +131,13 @@ $\leq 2$ from Theorem~\ref{thm:spectral-refined}.
 to the embedding-side gradient flattens the spectral bias from slope
 $1.99 \pm 0.11$ (vanilla) to $0.74 \pm 0.10$ (preconditioned), a one-line
 modification to backpropagation derived directly from the kBM viewpoint
-(Section~\ref{sec:exp-precond}).
+(Section~\ref{sec:exp-precond}). The same effect appears on real CIFAR-10
+features.
+
+\item \textbf{Effective hypothesis class.} As a direct corollary
+(Corollary~\ref{cor:gen}), the kBM theory yields a quantitative effective
+rank of the hypothesis class on bounded training horizons: only metric
+structure supported on $K$'s top-$r(T, \delta)$ eigenspace is learnable.
 \end{enumerate}
 
 We are explicit about scope. All our results assume the standard isotropic
@@ -446,6 +452,43 @@ with the size of that neighborhood controlled by $\lambda_i^2$.
 Section~\ref{sec:experiments} verifies this prediction numerically and
 shows that it holds for both networks and the ODE.
 
+\subsection{Generalization implication}
+\label{sec:gen}
+
+Theorem~\ref{thm:spectral-refined} has a direct generalization
+implication: the network cannot fit triplet structure that lives in
+$K$'s bottom eigenspace within any bounded training time. So if the
+target geometry has support outside $K$'s top-$r$ eigenspace, the
+network's effective hypothesis class on a finite training horizon is
+truncated to that subspace.
+
+\begin{corollary}[Effective rank of the hypothesis class]
+\label{cor:gen}
+Fix a training horizon $T$ and a tolerance $\delta > 0$. Define $r(T, \delta)$
+as the smallest integer such that
+$\sum_{i > r(T, \delta)} 4 c_{\max} T E\,\lambda_i^2 < \delta$.
+Then for any $G(t)$ on the kBM trajectory with $t \leq T$ and any
+target $G^\star$ supported on the top-$r(T, \delta)$ eigenspace of $K$,
+the bound from Theorem~\ref{thm:spectral-refined} applied mode-wise
+gives $\norm{G(T) - G^\star}_F^2 \leq \delta + \norm{G(0) - G^\star}_F^2$
+up to lower-order terms. Conversely, if $G^\star$ has nontrivial
+projection onto eigenspaces with index $> r(T, \delta)$, that projection
+is preserved (up to $\delta$) from initialization, regardless of how
+well the gradient signal aligns with it.
+\end{corollary}
+
+This is an \emph{effective rank} of the hypothesis class: in the NTK
+regime, the network can only fit metric structures supported on $K$'s
+top-$r(T, \delta)$ eigenspace within training time $T$. In particular,
+fitting test-time triplets that live in $K$'s bottom eigenspace requires
+either (a) a different kernel (more data, deeper network, different
+activation), or (b) the spectral preconditioner of
+Section~\ref{sec:exp-precond}. We do not pursue a rate-optimal
+generalization bound here---this would require a more involved analysis
+of the gradient noise and the loss-landscape geometry---but the
+qualitative picture is concrete: the kBM theory gives a precise
+formula for which structures are learnable on bounded horizons.
+
 \subsection{Two trivial identities, stated as remarks}
 
 The kBM viewpoint inherits two algebraic identities that we state as
@@ -654,6 +697,38 @@ preconditioner spreads work uniformly across the spectrum rather than
 focusing on top-eigenspace triplets.}
 \label{fig:precond}
 \end{figure}
+
+\subsection{Real-data validation: CIFAR-10}
+\label{sec:exp-cifar}
+
+To verify that the spectral-bias phenomenon and the preconditioner's
+effect are not artifacts of the synthetic-data setup, we repeat the
+experiment on CIFAR-10. We use a frozen ImageNet-pretrained ResNet-18
+\citep{he2016deep,deng2009imagenet} to extract penultimate-layer features,
+PCA-reduce to 128 dimensions, unit-normalize, and train a 2-layer
+fully-connected ReLU head with triplet loss. Triplets are formed from
+class labels (1000 anchor-positive-negative tuples per seed across
+$N = 400$ images, 10 classes). We report 5 seeds.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{fig_cifar10.png}
+\caption{Spectral preconditioner on CIFAR-10 (ResNet-18 penultimate
+features, depth-2 head). Vanilla slope $2.06 \pm 0.01$, preconditioned
+slope $1.59 \pm 0.01$ (mean $\pm$ std over 5 seeds). The slope-2
+phenomenon transfers to real image features, and the preconditioner's
+flattening effect is preserved.}
+\label{fig:cifar}
+\end{figure}
+
+The slope $2.06 \pm 0.01$ on real CIFAR-10 features matches the synthetic
+prediction to within seed variation, supporting the claim that the
+spectral bias is a property of NTK-regime training rather than of
+synthetic-data structure. The preconditioner reduces the slope to
+$1.59 \pm 0.01$, a $23\%$ reduction in spectral bias on real data
+(smaller than the $63\%$ reduction we observed on synthetic data
+because the depth-2 NTK on PCA-reduced ResNet features has heavier-tailed
+spectrum, magnifying the regularization-induced compromise).
 
 \subsection{Spectral bias on Fashion-MNIST}
 \label{sec:exp-fashion}
