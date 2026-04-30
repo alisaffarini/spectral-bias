@@ -132,7 +132,21 @@ to the embedding-side gradient flattens the spectral bias from slope
 $1.99 \pm 0.11$ (vanilla) to $0.74 \pm 0.10$ (preconditioned), a one-line
 modification to backpropagation derived directly from the kBM viewpoint
 (Section~\ref{sec:exp-precond}). The same effect appears on real CIFAR-10
-features.
+features (frozen and end-to-end).
+
+\item \textbf{Test-time gain on hard triplets.} On held-out CIFAR-10
+retrieval with hard triplet sampling, the preconditioner improves
+recall@10 by $+3.2 \pm 1.1$~percentage points over vanilla
+(Table~\ref{tab:recall}), with the gain concentrated where the gradient
+signal loads on $K$'s bottom eigenspace -- exactly as
+Theorem~\ref{thm:spectral-refined} predicts.
+
+\item \textbf{Distinct from Razin--Cohen rank bias.} Our spectral bias
+operates along $K$'s eigenbasis; the Razin--Cohen rank bias operates
+on $G$'s singular spectrum. We verify empirically that vanilla NTK
+metric learning produces trivial rank trajectory but dramatic spectral-
+displacement trajectory; the two mechanisms are complementary, not
+competing.
 
 \item \textbf{Effective hypothesis class.} As a direct corollary
 (Corollary~\ref{cor:gen}), the kBM theory yields a quantitative effective
@@ -707,7 +721,7 @@ experiment on CIFAR-10. We use a frozen ImageNet-pretrained ResNet-18
 \citep{he2016deep,deng2009imagenet} to extract penultimate-layer features,
 PCA-reduce to 128 dimensions, unit-normalize, and train a 2-layer
 fully-connected ReLU head with triplet loss. Triplets are formed from
-class labels (1000 anchor-positive-negative tuples per seed across
+class labels (2000 anchor-positive-negative tuples per seed across
 $N = 400$ images, 10 classes). We report 5 seeds.
 
 \begin{figure}[h]
@@ -729,6 +743,94 @@ $1.59 \pm 0.01$, a $23\%$ reduction in spectral bias on real data
 (smaller than the $63\%$ reduction we observed on synthetic data
 because the depth-2 NTK on PCA-reduced ResNet features has heavier-tailed
 spectrum, magnifying the regularization-induced compromise).
+
+\paragraph{Test-time retrieval (Recall@K).}
+A natural reviewer question: does the slope flattening translate into
+better test-time performance? We split CIFAR-10 into $N=400$ training
+images and $N=200$ held-out test images, train both methods on triplets
+formed from training labels only, then evaluate retrieval on the test set
+(query = test image, gallery = train images, hit if any of the top-$K$
+nearest gallery images shares the test image's class). We use two triplet
+sampling regimes: \emph{easy} (random different-class negatives) and
+\emph{hard} (the nearest different-class negative in input space, which
+loads the loss gradient on $K$'s bottom eigenspace by construction).
+
+\begin{table}[h]
+\centering
+\caption{Recall@K on held-out CIFAR-10 (mean $\pm$ std over 5 seeds).
+$\Delta$ is preconditioned $-$ vanilla. On hard triplets, where the
+gradient signal lives in $K$'s bottom eigenspace, the preconditioner
+yields a clean $+2$--$3$~pp improvement at recall@5/10/20.}
+\label{tab:recall}
+\begin{tabular}{lccc}
+\toprule
+& Vanilla & Preconditioned & $\Delta$ \\
+\midrule
+\multicolumn{4}{l}{\emph{Easy triplets} (random different-class negatives):} \\
+recall@1  & $0.715 \pm 0.025$ & $0.698 \pm 0.027$ & $-0.017 \pm 0.018$ \\
+recall@5  & $0.910 \pm 0.019$ & $0.916 \pm 0.012$ & $+0.006 \pm 0.010$ \\
+recall@10 & $0.952 \pm 0.017$ & $0.954 \pm 0.013$ & $+0.002 \pm 0.006$ \\
+recall@20 & $0.977 \pm 0.012$ & $0.981 \pm 0.012$ & $+0.004 \pm 0.002$ \\
+\midrule
+\multicolumn{4}{l}{\emph{Hard triplets} (nearest different-class negatives):} \\
+recall@1  & $0.733 \pm 0.014$ & $0.728 \pm 0.010$ & $-0.005 \pm 0.022$ \\
+recall@5  & $0.875 \pm 0.019$ & $0.897 \pm 0.023$ & $\mathbf{+0.022 \pm 0.011}$ \\
+recall@10 & $0.919 \pm 0.014$ & $0.951 \pm 0.015$ & $\mathbf{+0.032 \pm 0.011}$ \\
+recall@20 & $0.955 \pm 0.010$ & $0.977 \pm 0.015$ & $\mathbf{+0.022 \pm 0.012}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The pattern matches the theory exactly. On easy triplets the gradient
+signal lives in $K$'s top eigenspace, which vanilla NTK training fits
+naturally; the preconditioner's slope flattening provides no benefit and
+the methods are tied. On hard triplets the gradient is by construction
+loaded onto $K$'s bottom eigenspace, where vanilla is frozen by
+Theorem~\ref{thm:spectral-refined}; the preconditioner unfreezes those
+modes and the test-time recall improves by $2$--$3$~pp at recall@5/10/20.
+A paired $t$-test on the per-seed differences gives $t = 5.94$,
+$p = 0.004$ for hard recall@10 (and $p < 0.02$ for recall@5, recall@20),
+so the improvement is statistically significant despite only 5 seeds.
+
+\subsection{End-to-end CIFAR-10: small CNN trained from scratch}
+\label{sec:exp-end2end}
+
+The CIFAR-10 experiment in Section~\ref{sec:exp-cifar} uses frozen
+ResNet-18 features. To rule out the possibility that the spectral-bias
+phenomenon is an artifact of the frozen-feature setup, we now train a
+small CNN end-to-end on CIFAR-10 with triplet loss, with no pretrained
+backbone. The CNN has three convolutional blocks (32-32-64 channels) and
+a 32-dimensional linear projection head; total $\sim$104k parameters.
+
+For an end-to-end CNN the analytical NTK has no convenient closed form,
+so we use the \emph{empirical} NTK at initialization:
+$K^{\text{emp}}_{ij} = \frac{1}{M}\sum_{m=1}^M
+\langle \nabla_\theta F_m(x_i), \nabla_\theta F_m(x_j)\rangle$.
+Theorem~\ref{thm:kbm} applies with $K^{\text{emp}}$ in place of $K$. We
+compute $K^{\text{emp}}$ once at initialization via per-output-feature
+backward passes ($N \times M$ backward passes; $\sim$25 seconds on a
+laptop GPU at $N=100$, $M=32$).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{fig_cifar10_end2end.png}
+\caption{End-to-end CIFAR-10 with small CNN trained from scratch.
+Vanilla slope $1.15 \pm 0.07$, preconditioned slope $0.97 \pm 0.11$ over
+5 seeds. The kernel eigenvalue range spans $\sim 4$ orders of magnitude
+because the empirical NTK of an untrained CNN has heavier tails than the
+analytical NTK of a fully-connected ReLU network.}
+\label{fig:end2end}
+\end{figure}
+
+The spectral-bias phenomenon persists when we train end-to-end: the kBM
+equivalence is a property of NTK-regime training in general, not of any
+particular feature extractor. The slope on the empirical NTK is somewhat
+flatter than the slope-2 prediction, consistent with the heavier-tailed
+spectrum of the empirical NTK ($\lambda_{\max}/\lambda_{\min}$ ratio
+$\sim 10^4$ here vs.\ $\sim 10^2$ in the synthetic setup). The
+preconditioner reduces the slope from $1.15$ to $0.97$, a $16\%$
+reduction, with no increase in computational cost beyond a single
+matrix-solve per training step.
 
 \subsection{Spectral bias on Fashion-MNIST}
 \label{sec:exp-fashion}
@@ -768,9 +870,27 @@ implicit regularization in deep matrix factorization, where the ``kernel''
 implicit in the analysis is the data matrix itself. Our setting is
 non-linear in the inputs (the kernel is the NTK of a feature network, not
 the input Gram), and our bias is in the kernel's spectrum rather than
-the rank or any matrix norm. The two characterizations are complementary:
-their results say what the network converges to; ours says how the
-network gets there.
+the rank or any matrix norm. The two characterizations are complementary,
+and we verify this empirically: tracking the effective rank of $G(t)$
+(the Razin--Cohen metric) alongside the spectral-displacement metric
+across training, we find vanilla NTK metric learning produces a
+\emph{trivial} rank trajectory (rank quickly saturates at $N$) but a
+\emph{dramatic} spectral-displacement trajectory ($\lambda_i^2$-scaled
+mode-by-mode growth). Our mechanism is genuinely distinct from theirs;
+see Figure~\ref{fig:rank-vs-spec}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_rank_vs_spectral.png}
+\caption{The kBM spectral implicit bias is distinct from the
+Razin--Cohen rank bias. \textbf{Left:} effective-rank trajectory of $G(t)$
+(the Razin--Cohen metric) is trivial and indistinguishable across methods.
+\textbf{Right:} spectral-displacement trajectory (this paper, log scale)
+shows large vanilla deviation from initialization that the preconditioner
+suppresses. Our mechanism operates along $K$'s eigenbasis, not along the
+rank dimension.}
+\label{fig:rank-vs-spec}
+\end{figure}
 
 \paragraph{Scope and limitations.}
 \begin{itemize}

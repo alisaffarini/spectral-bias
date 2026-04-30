@@ -332,6 +332,63 @@ def fig_cifar10():
     plt.close(fig)
 
 
+def fig_cifar10_end2end():
+    path = RAW / "cifar10_end2end.json"
+    if not path.exists():
+        return
+    data = _load(path)
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    _slope_panel(ax, data,
+                 title=r"CIFAR-10 end-to-end (small CNN, empirical NTK)")
+    ax.set_ylabel(r"$|\widetilde G_{ii}(T) - \widetilde G_{ii}(0)|$")
+    fig.tight_layout()
+    fig.savefig(OUT / "fig_cifar10_end2end.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
+def fig_rank_vs_spectral():
+    path = RAW / "rank_vs_spectral.json"
+    if not path.exists():
+        return
+    data = _load(path)
+    epochs = np.array(data[0]["epochs"])
+
+    rank_v = np.stack([np.array(d["rank_vanilla"]) for d in data], axis=0)
+    rank_p = np.stack([np.array(d["rank_precond"]) for d in data], axis=0)
+    spec_v = np.stack([np.array(d["spectral_diff_vanilla"]) for d in data], axis=0)
+    spec_p = np.stack([np.array(d["spectral_diff_precond"]) for d in data], axis=0)
+
+    fig, axes = plt.subplots(1, 2, figsize=(13, 4.5))
+
+    ax = axes[0]
+    rv_m = rank_v.mean(0); rv_s = rank_v.std(0)
+    rp_m = rank_p.mean(0); rp_s = rank_p.std(0)
+    ax.fill_between(epochs, rv_m - rv_s, rv_m + rv_s, alpha=0.2, color="tab:blue")
+    ax.plot(epochs, rv_m, lw=1.5, color="tab:blue", label="vanilla")
+    ax.fill_between(epochs, rp_m - rp_s, rp_m + rp_s, alpha=0.2, color="tab:orange")
+    ax.plot(epochs, rp_m, lw=1.5, color="tab:orange", label="preconditioned")
+    ax.set_xlabel("epoch"); ax.set_ylabel(r"effective rank of $G(t)$")
+    ax.set_title(r"Razin-Cohen rank metric (rank bias)")
+    ax.legend(loc="best", fontsize=9)
+
+    ax = axes[1]
+    sv_m = spec_v.mean(0); sv_s = spec_v.std(0)
+    sp_m = spec_p.mean(0); sp_s = spec_p.std(0)
+    ax.fill_between(epochs, sv_m - sv_s, sv_m + sv_s, alpha=0.2, color="tab:blue")
+    ax.plot(epochs, sv_m, lw=1.5, color="tab:blue", label="vanilla")
+    ax.fill_between(epochs, sp_m - sp_s, sp_m + sp_s, alpha=0.2, color="tab:orange")
+    ax.plot(epochs, sp_m, lw=1.5, color="tab:orange", label="preconditioned")
+    ax.set_xlabel("epoch"); ax.set_ylabel(r"$\|\mathrm{diag}(\widetilde G(t) - \widetilde G(0))\|_2$")
+    ax.set_title(r"Spectral-bias metric (this paper)")
+    ax.legend(loc="best", fontsize=9)
+    ax.set_yscale("log")
+
+    fig.suptitle(r"Razin-Cohen vs spectral implicit bias -- distinct, complementary metrics")
+    fig.tight_layout()
+    fig.savefig(OUT / "fig_rank_vs_spectral.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main():
     fig_equivalence()
     fig_spectral_bias()
@@ -340,6 +397,8 @@ def main():
     fig_fashion()
     fig_preconditioner()
     fig_cifar10()
+    fig_cifar10_end2end()
+    fig_rank_vs_spectral()
     print("figures written to", OUT)
 
 
