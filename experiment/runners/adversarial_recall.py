@@ -147,9 +147,19 @@ def run_one(seed: int, cfg: AdvRecallConfig, device: str = "cuda") -> dict:
     print(f"  [t={_t.time()-t0:.1f}s] loading CIFAR-10 images...", flush=True)
     images, labels = _load_cifar10_imgs(cfg, seed)
     print(f"  [t={_t.time()-t0:.1f}s] images loaded shape={tuple(images.shape)}", flush=True)
-    n_train = cfg.N_train
-    train_imgs, train_lbl = images[:n_train], labels[:n_train]
-    test_imgs, test_lbl = images[n_train:], labels[n_train:]
+    # Stratified per-class split: every class appears in both train and test.
+    per_class_train = cfg.N_train // cfg.n_classes
+    per_class_test = cfg.N_test // cfg.n_classes
+    rng = np.random.default_rng(seed)
+    train_idx, test_idx = [], []
+    for c in range(cfg.n_classes):
+        idxs = np.where(labels == c)[0]
+        rng.shuffle(idxs)
+        train_idx.extend(idxs[:per_class_train].tolist())
+        test_idx.extend(idxs[per_class_train:per_class_train + per_class_test].tolist())
+    train_idx = np.array(train_idx); test_idx = np.array(test_idx)
+    train_imgs, train_lbl = images[train_idx], labels[train_idx]
+    test_imgs, test_lbl = images[test_idx], labels[test_idx]
 
     print(f"  [t={_t.time()-t0:.1f}s] loading ResNet-18 backbone on {device}...", flush=True)
     backbone = _resnet18(device)
