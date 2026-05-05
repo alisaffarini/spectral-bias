@@ -141,18 +141,25 @@ def _pgd_attack(images, labels, full_model, cfg, device):
 
 
 def run_one(seed: int, cfg: AdvRecallConfig, device: str = "cuda") -> dict:
+    import time as _t
+    t0 = _t.time()
     torch.manual_seed(seed); np.random.seed(seed)
+    print(f"  [t={_t.time()-t0:.1f}s] loading CIFAR-10 images...", flush=True)
     images, labels = _load_cifar10_imgs(cfg, seed)
+    print(f"  [t={_t.time()-t0:.1f}s] images loaded shape={tuple(images.shape)}", flush=True)
     n_train = cfg.N_train
     train_imgs, train_lbl = images[:n_train], labels[:n_train]
     test_imgs, test_lbl = images[n_train:], labels[n_train:]
 
+    print(f"  [t={_t.time()-t0:.1f}s] loading ResNet-18 backbone on {device}...", flush=True)
     backbone = _resnet18(device)
+    print(f"  [t={_t.time()-t0:.1f}s] extracting train features...", flush=True)
     train_feats = []
     bsz = 64
     for i in range(0, len(train_imgs), bsz):
         train_feats.append(backbone(_normalize(train_imgs[i:i + bsz].to(device))).detach().cpu())
     train_feats = torch.cat(train_feats, dim=0).numpy()
+    print(f"  [t={_t.time()-t0:.1f}s] features {train_feats.shape}; PCA + NTK...", flush=True)
     feats_centered = train_feats - train_feats.mean(axis=0, keepdims=True)
     U, S, Vt = np.linalg.svd(feats_centered, full_matrices=False)
     pca_basis = Vt[: cfg.feature_dim].T  # (512, feature_dim)
@@ -163,6 +170,7 @@ def run_one(seed: int, cfg: AdvRecallConfig, device: str = "cuda") -> dict:
     triplets = _make_triplets(train_lbl, cfg.n_triplets, seed,
                                difficulty=cfg.triplet_difficulty, Z=Z_train)
     K = depth_L_ntk_kernel(Z_train, cfg.depth)
+    print(f"  [t={_t.time()-t0:.1f}s] NTK done, training heads...", flush=True)
 
     def make_head_and_train(method):
         torch.manual_seed(seed); np.random.seed(seed)
