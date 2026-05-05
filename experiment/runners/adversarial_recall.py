@@ -64,13 +64,11 @@ def _features(images, model, device):
 
 
 def _load_cifar10_imgs(cfg: AdvRecallConfig, seed: int):
+    """Fast loader: pull selected indices from CIFAR-10's underlying
+    numpy array (avoids the PIL per-image path), then resize as a single
+    batched torch op."""
     rng = np.random.default_rng(seed)
-    tfm = transforms.Compose([
-        transforms.Resize(224),
-        transforms.ToTensor(),
-        # We'll normalize inside the resnet wrapper so PGD sees raw pixels.
-    ])
-    ds = torchvision.datasets.CIFAR10(cfg.data_root, train=True, download=True, transform=tfm)
+    ds = torchvision.datasets.CIFAR10(cfg.data_root, train=True, download=True)
     targets = np.array(ds.targets)
     per_class = (cfg.N_train + cfg.N_test) // cfg.n_classes
     idxs, labels = [], []
@@ -79,7 +77,9 @@ def _load_cifar10_imgs(cfg: AdvRecallConfig, seed: int):
         chosen = rng.choice(cand, size=per_class, replace=False)
         idxs.extend(chosen.tolist())
         labels.extend([c] * per_class)
-    images = torch.stack([ds[i][0] for i in idxs])
+    arr = ds.data[np.asarray(idxs)]                              # (B, 32, 32, 3) uint8
+    t = torch.from_numpy(arr).permute(0, 3, 1, 2).float() / 255.0  # (B, 3, 32, 32)
+    images = torch.nn.functional.interpolate(t, size=224, mode="bilinear", align_corners=False)
     return images, np.array(labels)
 
 

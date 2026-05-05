@@ -50,15 +50,11 @@ def _make_backbone(name: str, device: str) -> nn.Module:
 
 
 def _load_subset(cfg: ScaledRecallConfig, seed: int, device: str):
+    """Fast path: index CIFAR's underlying numpy data, resize on GPU as
+    a single batched op; normalize inside the feature loop."""
     rng = np.random.default_rng(seed)
-    tfm = transforms.Compose([
-        transforms.Resize(224),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225]),
-    ])
     ds = torchvision.datasets.CIFAR10(
-        root=cfg.data_root, train=True, download=True, transform=tfm,
+        root=cfg.data_root, train=True, download=True,
     )
     targets = np.array(ds.targets)
     per_class = (cfg.N_train + cfg.N_test) // cfg.n_classes
@@ -68,16 +64,22 @@ def _load_subset(cfg: ScaledRecallConfig, seed: int, device: str):
         chosen = rng.choice(candidates, size=per_class, replace=False)
         idxs.extend(chosen.tolist())
         labels.extend([c] * per_class)
-    print(f"  loading {len(idxs)} CIFAR-10 images at 224x224...", flush=True)
-    images = torch.stack([ds[i][0] for i in idxs])
+    print(f"  loading {len(idxs)} CIFAR-10 images at 224x224 (fast path)...", flush=True)
+    arr = ds.data[np.asarray(idxs)]                                # (B,32,32,3) uint8
+    raw = torch.from_numpy(arr).permute(0, 3, 1, 2).contiguous()   # (B,3,32,32) uint8
     labels = np.array(labels)
     print(f"  extracting {cfg.backbone} features (bs=128) on {device}...", flush=True)
     backbone = _make_backbone(cfg.backbone, device)
+    mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
     feats_list = []
     bsz = 128
     with torch.no_grad():
-        for i in range(0, len(images), bsz):
-            batch = images[i:i + bsz].to(device, non_blocking=True)
+        for i in range(0, len(raw), bsz):
+            batch = raw[i:i + bsz].to(device, non_blocking=True).float() / 255.0
+            batch = torch.nn.functional.interpolate(batch, size=224, mode="bilinear",
+                                                     align_corners=False)
+            batch = (batch - mean) / std
             feats_list.append(backbone(batch).cpu())
     del backbone
     torch.cuda.empty_cache()
