@@ -38,7 +38,7 @@ class ScaledRecallConfig:
     backbone: str = "resnet50"
 
 
-def _backbone_features(images: torch.Tensor, device: str, name: str) -> torch.Tensor:
+def _make_backbone(name: str, device: str) -> nn.Module:
     if name == "resnet50":
         weights = torchvision.models.ResNet50_Weights.DEFAULT
         model = torchvision.models.resnet50(weights=weights)
@@ -46,10 +46,7 @@ def _backbone_features(images: torch.Tensor, device: str, name: str) -> torch.Te
         weights = torchvision.models.ResNet18_Weights.DEFAULT
         model = torchvision.models.resnet18(weights=weights)
     model.fc = nn.Identity()
-    model.eval().to(device)
-    with torch.no_grad():
-        feats = model(images.to(device))
-    return feats.cpu()
+    return model.eval().to(device)
 
 
 def _load_subset(cfg: ScaledRecallConfig, seed: int, device: str):
@@ -71,13 +68,21 @@ def _load_subset(cfg: ScaledRecallConfig, seed: int, device: str):
         chosen = rng.choice(candidates, size=per_class, replace=False)
         idxs.extend(chosen.tolist())
         labels.extend([c] * per_class)
+    print(f"  loading {len(idxs)} CIFAR-10 images at 224x224...", flush=True)
     images = torch.stack([ds[i][0] for i in idxs])
     labels = np.array(labels)
-    feats = []
+    print(f"  extracting {cfg.backbone} features (bs=128) on {device}...", flush=True)
+    backbone = _make_backbone(cfg.backbone, device)
+    feats_list = []
     bsz = 128
-    for i in range(0, len(images), bsz):
-        feats.append(_backbone_features(images[i:i + bsz], device, cfg.backbone))
-    feats = torch.cat(feats, dim=0).numpy()
+    with torch.no_grad():
+        for i in range(0, len(images), bsz):
+            batch = images[i:i + bsz].to(device, non_blocking=True)
+            feats_list.append(backbone(batch).cpu())
+    del backbone
+    torch.cuda.empty_cache()
+    feats = torch.cat(feats_list, dim=0).numpy()
+    print(f"  features shape: {feats.shape}; computing PCA basis...", flush=True)
     feats_centered = feats - feats.mean(axis=0, keepdims=True)
     U, S, Vt = np.linalg.svd(feats_centered, full_matrices=False)
     Z = U[:, :cfg.feature_dim] * S[:cfg.feature_dim]

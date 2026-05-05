@@ -92,15 +92,12 @@ def _normalize(x):
 class HeadOnly(nn.Module):
     """Wraps frozen ResNet-18 + a trainable metric head; PGD attacks
     the input pixel-space embedding."""
-    def __init__(self, backbone, metric_head, pca_basis):
+    def __init__(self, backbone, metric_head, pca_basis, pca_mean):
         super().__init__()
         self.backbone = backbone
         self.head = metric_head
         self.register_buffer("pca", torch.as_tensor(pca_basis, dtype=torch.float32))
-        self.pca_mean = None
-
-    def set_pca_mean(self, mean):
-        self.pca_mean = torch.as_tensor(mean, dtype=torch.float32, device=self.pca.device)
+        self.register_buffer("pca_mean", torch.as_tensor(pca_mean, dtype=torch.float32))
 
     def forward(self, x):
         feats = self.backbone(_normalize(x))
@@ -180,8 +177,8 @@ def run_one(seed: int, cfg: AdvRecallConfig, device: str = "cuda") -> dict:
                                   n_epochs=cfg.n_epochs, lr=cfg.lr, margin=cfg.margin,
                                   record_every=cfg.record_every, eps=cfg.eps, device=device)
         head.to(device)
-        full = HeadOnly(backbone, head, pca_basis)
-        full.set_pca_mean(pca_mean.flatten())
+        full = HeadOnly(backbone, head, pca_basis, pca_mean.flatten())
+        full.to(device)
         return full
 
     out = {"seed": seed, "Ks": list(cfg.Ks), "config": asdict(cfg)}
