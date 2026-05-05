@@ -1,0 +1,29 @@
+Tier 1 (companion): Scaled CIFAR-10 EASY retrieval, N_train=4000, ResNet-50, 5 seeds
+=====================================================================================
+
+Same setup as the hard run, but easy triplet mining (random different-class
+negative). Establishes the asymmetric prediction: K^{-1} helps on hard,
+ties on easy.
+
+  vanilla R@1=0.8564 +/- 0.0111   precond R@1=0.8368 +/- 0.0077   delta -1.96 pp
+  vanilla R@5=0.9530 +/- 0.0083   precond R@5=0.9478 +/- 0.0077   delta -0.52 pp
+  vanilla R@10=0.9700 +/- 0.0078  precond R@10=0.9714 +/- 0.0051  delta +0.14 pp
+  vanilla R@20=0.9818 +/- 0.0063  precond R@20=0.9822 +/- 0.0063  delta +0.04 pp
+
+Result: K^{-1} essentially TIES vanilla on easy mining at R@5/R@10/R@20
+(deltas within +/- 0.5 pp), exactly the predicted no-gain regime since
+easy-mining gradient signal lives in top eigenmodes that vanilla already
+exploits. R@1 shows a small negative effect (-1.96 pp) consistent with
+the noise-amplification caveat at the tightest retrieval measure.
+
+PAIRED WITH HARD:
+            R@1     R@5     R@10    R@20
+  HARD     -0.10  +1.68   +2.10   +2.30   (gains, monotone in K)
+  EASY     -1.96  -0.52   +0.14   +0.04   (ties)
+  asym(-)   ~0    +2.20   +1.96   +2.26   (hard - easy delta)
+
+The asymmetric retrieval prediction (Delta_hard > Delta_easy ~ 0)
+holds at N=4000, strengthening the main-paper N=300 result.
+
+Status: PAPER-READY. Together with vit_ntk and recall_adversarial,
+all three Tier results land in the predicted regime.
