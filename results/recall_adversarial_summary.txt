@@ -1,0 +1,27 @@
+Tier 2: Adversarial Recall@K (PGD eps=8/255, 10 steps), 5 seeds
+==================================================================
+
+CIFAR-10, N_train=400, N_test=200, ResNet-18 features PCA->128,
+depth-2 width-1024 metric head, 1500 epochs, hard triplet mining.
+
+Clean recall:
+  vanilla R@1=0.735+-0.016  R@5=0.879+-0.034  R@10=0.917+-0.031  R@20=0.957+-0.024
+  precond R@1=0.728+-0.040  R@5=0.900+-0.029  R@10=0.945+-0.021  R@20=0.979+-0.020
+
+After PGD attack:
+  vanilla R@1=0.000+-0.000  R@5=0.003+-0.004  R@10=0.010+-0.009  R@20=0.031+-0.023
+  precond R@1=0.001+-0.002  R@5=0.014+-0.012  R@10=0.057+-0.043  R@20=0.133+-0.070
+
+Headline (relative robustness):
+  R@1   vanilla -100.0%  precond -99.9%   gap +0.1 pp
+  R@5   vanilla -99.7%   precond -98.4%   gap +1.2 pp
+  R@10  vanilla -98.9%   precond -94.0%   gap +4.9 pp     <-- 5.7x more adv-R@10
+  R@20  vanilla -96.8%   precond -86.4%   gap +10.3 pp    <-- 4.3x more adv-R@20
+
+Result: K^{-1} training preserves substantially more adversarial recall
+at K>=10. The gap grows monotonically with K, consistent with the
+prediction that bottom-eigenmode reach widens the embedding-space
+robustness margin. At R@1 both methods are devastated by PGD
+(unsurprising at eps=8/255 against frozen-backbone features).
+
+Status: PAPER-READY for Tier 2 (adversarial robustness).

@@ -1,0 +1,19 @@
+Tier 1: Scaled CIFAR-10 hard retrieval, N_train=4000, ResNet-50 features, 5 seeds
+====================================================================================
+
+CIFAR-10, 10 classes, 400 per class train, 100 per class test,
+ResNet-50 ImageNet features PCA->256, depth-2 width-1024 metric head,
+2000 epochs, hard triplet mining (n_triplets=12000).
+
+  vanilla R@1=0.8548 +/- 0.0056   precond R@1=0.8538 +/- 0.0099   delta -0.10 pp
+  vanilla R@5=0.9114 +/- 0.0078   precond R@5=0.9282 +/- 0.0057   delta +1.68 pp  (~2.1 sigma)
+  vanilla R@10=0.9290 +/- 0.0066  precond R@10=0.9500 +/- 0.0097  delta +2.10 pp  (~2.6 sigma)
+  vanilla R@20=0.9424 +/- 0.0062  precond R@20=0.9654 +/- 0.0073  delta +2.30 pp  (~3.4 sigma)
+
+Result: K^{-1} preconditioning produces consistent, monotonically-growing
+gains on hard CIFAR-10 retrieval at N=4000 -- significant at R@5/R@10/R@20.
+The R@10 gain (+2.1 pp) is roughly TWICE the N=300 main-paper result
+(+1 pp), consistent with the prediction that larger N gives the bottom-
+eigenspace gradient signal more structure to exploit.
+
+Status: PAPER-READY for Tier 1 hard. Easy run pending.
