@@ -76,13 +76,18 @@ def _split_train_test(Z: np.ndarray, labels: np.ndarray,
 
 
 def _make_triplets(labels: np.ndarray, n_triplets: int, seed: int,
-                   difficulty: str = "easy", Z: np.ndarray | None = None):
+                   difficulty: str = "easy", Z: np.ndarray | None = None,
+                   embeddings: np.ndarray | None = None):
     """Form (anchor, positive, negative) triplets.
 
     difficulty='easy': negative is uniformly random from a different class.
     difficulty='hard': negative is the nearest different-class point in
                        INPUT space (Z), so the loss-relevant gradient
                        loads on bottom eigenspace of K.
+    difficulty='semi_hard': negative is the nearest different-class point
+                       in EMBEDDING space (uses `embeddings`); this matches
+                       the standard FaceNet-style operationalization, where
+                       hardness is defined in the model's own representation.
     """
     rng = np.random.default_rng(seed)
     by_class = {c: np.where(labels == c)[0] for c in np.unique(labels)}
@@ -91,9 +96,15 @@ def _make_triplets(labels: np.ndarray, n_triplets: int, seed: int,
     if difficulty == "hard":
         if Z is None:
             raise ValueError("hard triplets require Z")
-        N = len(labels)
         d2 = np.sum(Z ** 2, axis=1, keepdims=True) + np.sum(Z ** 2, axis=1)[None, :] \
              - 2.0 * Z @ Z.T
+        np.fill_diagonal(d2, np.inf)
+    elif difficulty == "semi_hard":
+        if embeddings is None:
+            raise ValueError("semi_hard triplets require embeddings")
+        d2 = np.sum(embeddings ** 2, axis=1, keepdims=True) + \
+             np.sum(embeddings ** 2, axis=1)[None, :] - \
+             2.0 * embeddings @ embeddings.T
         np.fill_diagonal(d2, np.inf)
 
     triplets = []
@@ -103,7 +114,7 @@ def _make_triplets(labels: np.ndarray, n_triplets: int, seed: int,
         if difficulty == "easy":
             c_neg = rng.choice([c for c in classes if c != c_pos])
             n = rng.choice(by_class[c_neg])
-        else:  # hard
+        else:  # hard or semi_hard
             other = np.concatenate([by_class[c] for c in classes if c != c_pos])
             n = int(other[np.argmin(d2[a, other])])
         triplets.append((int(a), int(p), int(n)))
@@ -120,8 +131,28 @@ def run_one(seed: int, cfg: RecallConfig, device: str = "cuda") -> dict:
     Z_train, lbl_train, Z_test, lbl_test = _split_train_test(
         Z_all, labels_all, cfg.N_train, cfg.N_test, seed,
     )
+
+    # For semi-hard mining, briefly warm up a vanilla model on easy
+    # triplets to obtain embeddings, then mine negatives in embedding space.
+    semi_hard_emb = None
+    if cfg.triplet_difficulty == "semi_hard":
+        easy_triplets = _make_triplets(lbl_train, cfg.n_triplets, seed,
+                                        difficulty="easy", Z=Z_train)
+        torch.manual_seed(seed); np.random.seed(seed)
+        warm = MetricNetwork(cfg.feature_dim, [cfg.width] * cfg.depth)
+        train_network(
+            warm, Z_train, easy_triplets,
+            TrainConfig(n_epochs=max(50, cfg.n_epochs // 10),
+                        lr=cfg.lr, margin=cfg.margin,
+                        record_every=10 ** 9),
+            device=device,
+        )
+        warm.to("cpu")
+        semi_hard_emb = embeddings_from_model(warm, Z_train, device="cpu")
+
     triplets = _make_triplets(lbl_train, cfg.n_triplets, seed,
-                               difficulty=cfg.triplet_difficulty, Z=Z_train)
+                               difficulty=cfg.triplet_difficulty,
+                               Z=Z_train, embeddings=semi_hard_emb)
 
     K = depth_L_ntk_kernel(Z_train, cfg.depth)
 

@@ -1,0 +1,140 @@
+\section{Rank-vs-spectral trajectory}
+\label{app:rank-spec}
+
+Per-epoch rank and Frobenius-norm spectral displacement on the same trajectory. The synthetic experiment uses $N = 50$, depth $1$, width $1000$. \texttt{spectral\_diff} columns are $\| \widetilde{G}(t) - \widetilde{G}(0) \|_F$ for the indicated variant.
+
+\subsection*{Seed 0}
+\begin{table}[H]
+\centering
+\caption{Seed 0: rank trajectory and spectral displacement, $N = 50$ depth-1.}
+\label{tab:ranspec-s0}
+\begin{tabular}{c c c c c c c c}
+\toprule
+epoch & rank V & rank P & spec\_diff V & spec\_diff P & loss V & loss P \\
+\midrule
+0 & 34 & 34 & 0.6172 & 0.0865 & 1525.490 & 1525.490 \\
+200 & 35 & 34 & 82.5049 & 11.8430 & 766.222 & 1042.834 \\
+400 & 35 & 34 & 121.5688 & 13.5623 & 505.931 & 802.163 \\
+600 & 35 & 34 & 144.9039 & 11.0663 & 374.378 & 645.949 \\
+800 & 35 & 34 & 160.1366 & 10.4735 & 290.312 & 544.838 \\
+1000 & 35 & 34 & 171.4824 & 17.0497 & 230.349 & 468.652 \\
+1200 & 35 & 34 & 180.0846 & 27.6956 & 183.610 & 409.107 \\
+1400 & 35 & 34 & 186.6353 & 40.7013 & 147.832 & 360.203 \\
+1600 & 35 & 34 & 191.5418 & 54.7752 & 120.546 & 320.041 \\
+1800 & 34 & 34 & 195.4396 & 68.7049 & 98.353 & 287.829 \\
+1999 & 34 & 34 & 198.3005 & 82.7277 & 80.741 & 261.172 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Seed 1}
+\begin{table}[H]
+\centering
+\caption{Seed 1: rank trajectory and spectral displacement, $N = 50$ depth-1.}
+\label{tab:ranspec-s1}
+\begin{tabular}{c c c c c c c c}
+\toprule
+epoch & rank V & rank P & spec\_diff V & spec\_diff P & loss V & loss P \\
+\midrule
+0 & 34 & 34 & 0.5655 & 0.0563 & 1601.171 & 1601.171 \\
+200 & 34 & 33 & 73.0666 & 7.2196 & 790.609 & 1070.974 \\
+400 & 34 & 33 & 110.5828 & 11.3019 & 517.979 & 826.971 \\
+600 & 34 & 33 & 133.3961 & 17.6226 & 366.871 & 677.349 \\
+800 & 33 & 32 & 149.2934 & 27.9538 & 271.307 & 570.327 \\
+1000 & 33 & 32 & 160.2255 & 42.3889 & 203.534 & 487.096 \\
+1200 & 33 & 32 & 167.2141 & 58.4366 & 154.976 & 420.643 \\
+1400 & 33 & 32 & 172.0935 & 76.1353 & 118.798 & 366.148 \\
+1600 & 32 & 32 & 176.0684 & 94.6835 & 91.526 & 323.095 \\
+1800 & 32 & 32 & 179.0111 & 113.5556 & 70.299 & 286.876 \\
+1999 & 32 & 32 & 180.8209 & 132.1042 & 53.259 & 256.191 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Seed 2}
+\begin{table}[H]
+\centering
+\caption{Seed 2: rank trajectory and spectral displacement, $N = 50$ depth-1.}
+\label{tab:ranspec-s2}
+\begin{tabular}{c c c c c c c c}
+\toprule
+epoch & rank V & rank P & spec\_diff V & spec\_diff P & loss V & loss P \\
+\midrule
+0 & 33 & 33 & 0.5233 & 0.0792 & 1346.290 & 1346.290 \\
+200 & 33 & 33 & 67.9436 & 7.8463 & 701.309 & 928.787 \\
+400 & 34 & 34 & 103.5779 & 9.9446 & 458.184 & 721.717 \\
+600 & 34 & 34 & 126.7586 & 11.1524 & 318.878 & 580.250 \\
+800 & 34 & 33 & 141.0613 & 13.7513 & 238.916 & 475.457 \\
+1000 & 34 & 33 & 150.1412 & 20.1901 & 187.155 & 393.118 \\
+1200 & 34 & 33 & 156.3735 & 29.8339 & 148.399 & 331.761 \\
+1400 & 34 & 33 & 160.7937 & 41.3218 & 119.992 & 283.308 \\
+1600 & 34 & 33 & 164.1770 & 53.4519 & 98.973 & 242.781 \\
+1800 & 34 & 33 & 167.1063 & 66.4719 & 82.531 & 210.367 \\
+1999 & 34 & 33 & 169.4178 & 79.7799 & 68.691 & 183.047 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Seed 3}
+\begin{table}[H]
+\centering
+\caption{Seed 3: rank trajectory and spectral displacement, $N = 50$ depth-1.}
+\label{tab:ranspec-s3}
+\begin{tabular}{c c c c c c c c}
+\toprule
+epoch & rank V & rank P & spec\_diff V & spec\_diff P & loss V & loss P \\
+\midrule
+0 & 32 & 32 & 0.4729 & 0.0435 & 1375.993 & 1375.993 \\
+200 & 33 & 33 & 63.0315 & 4.4401 & 704.348 & 921.898 \\
+400 & 34 & 33 & 97.2550 & 6.9618 & 463.811 & 716.447 \\
+600 & 34 & 33 & 117.7547 & 11.6179 & 330.192 & 580.987 \\
+800 & 34 & 33 & 131.0592 & 19.8268 & 251.243 & 480.930 \\
+1000 & 34 & 33 & 140.3624 & 30.3525 & 195.627 & 405.190 \\
+1200 & 34 & 33 & 147.2359 & 42.8376 & 156.165 & 346.855 \\
+1400 & 34 & 32 & 152.1893 & 57.3204 & 123.874 & 299.984 \\
+1600 & 34 & 32 & 156.2254 & 73.5763 & 99.484 & 258.744 \\
+1800 & 33 & 32 & 159.4999 & 89.8526 & 79.858 & 225.378 \\
+1999 & 33 & 32 & 161.9305 & 105.5890 & 64.403 & 197.469 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Seed 4}
+\begin{table}[H]
+\centering
+\caption{Seed 4: rank trajectory and spectral displacement, $N = 50$ depth-1.}
+\label{tab:ranspec-s4}
+\begin{tabular}{c c c c c c c c}
+\toprule
+epoch & rank V & rank P & spec\_diff V & spec\_diff P & loss V & loss P \\
+\midrule
+0 & 34 & 34 & 0.5754 & 0.0401 & 1556.637 & 1556.637 \\
+200 & 35 & 33 & 74.8543 & 6.3150 & 756.306 & 1094.554 \\
+400 & 35 & 34 & 110.0039 & 12.6049 & 483.438 & 836.149 \\
+600 & 34 & 34 & 131.4728 & 20.3611 & 338.145 & 672.589 \\
+800 & 34 & 34 & 145.6640 & 29.8972 & 250.000 & 557.935 \\
+1000 & 34 & 33 & 155.2717 & 41.2984 & 188.619 & 474.704 \\
+1200 & 34 & 33 & 161.6604 & 54.3247 & 142.388 & 410.328 \\
+1400 & 33 & 33 & 165.8882 & 68.9000 & 107.062 & 357.808 \\
+1600 & 33 & 33 & 168.9079 & 84.4378 & 81.105 & 314.431 \\
+1800 & 33 & 33 & 171.1840 & 101.1100 & 63.042 & 276.315 \\
+1999 & 33 & 33 & 172.8506 & 118.0078 & 49.708 & 243.981 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Cross-seed summary at final epoch}
+\begin{table}[H]
+\centering
+\caption{Final-epoch cross-seed summary.}
+\label{tab:ranspec-summary}
+\begin{tabular}{l c c}
+\toprule
+metric & vanilla & precond \\
+\midrule
+effective rank & 33.20 $\pm$ 0.75 & 32.80 $\pm$ 0.75 \\
+spectral displacement & 176.664 $\pm$ 12.406 & 103.642 $\pm$ 20.135 \\
+final loss & 63.360 $\pm$ 11.136 & 228.372 $\pm$ 31.946 \\
+\bottomrule
+\end{tabular}
+\end{table}

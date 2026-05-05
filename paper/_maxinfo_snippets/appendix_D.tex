@@ -1,0 +1,166 @@
+\section{Recall@K: full per-seed curves}
+\label{app:recall}
+
+Held-out CIFAR-10 retrieval metrics for both triplet-difficulty regimes. For each of $K \in \{1, 5, 10, 20\}$ we report all five seeds' vanilla and preconditioned recall, the per-seed difference $\Delta = \text{precond} - \text{vanilla}$, and a paired $t$-statistic / two-sided $p$-value over the five paired differences.
+
+\subsection{Easy triplets}
+\begin{table}[H]
+\centering
+\caption{Easy triplets, recall@1 per seed.}
+\label{tab:recall-easy-K1}
+\begin{tabular}{c c c c}
+\toprule
+seed & vanilla & precond & $\Delta$ \\
+\midrule
+0 & 0.7450 & 0.7300 & -0.0150 \\
+1 & 0.7300 & 0.7200 & -0.0100 \\
+2 & 0.6800 & 0.6550 & -0.0250 \\
+3 & 0.6900 & 0.7000 & 0.0100 \\
+4 & 0.7300 & 0.6850 & -0.0450 \\
+\midrule
+mean $\pm$ std & 0.7150 $\pm$ 0.0253 & 0.6980 $\pm$ 0.0266 & -0.0170 $\pm$ 0.0181 \\
+paired $t$ / $p$ & \multicolumn{3}{l}{$t = -1.883$, two-sided $p = 0.1328$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Easy triplets, recall@5 per seed.}
+\label{tab:recall-easy-K5}
+\begin{tabular}{c c c c}
+\toprule
+seed & vanilla & precond & $\Delta$ \\
+\midrule
+0 & 0.9150 & 0.9150 & 0.0000 \\
+1 & 0.9300 & 0.9300 & 0.0000 \\
+2 & 0.8750 & 0.9000 & 0.0250 \\
+3 & 0.9050 & 0.9050 & 0.0000 \\
+4 & 0.9250 & 0.9300 & 0.0050 \\
+\midrule
+mean $\pm$ std & 0.9100 $\pm$ 0.0195 & 0.9160 $\pm$ 0.0124 & 0.0060 $\pm$ 0.0097 \\
+paired $t$ / $p$ & \multicolumn{3}{l}{$t = 1.238$, two-sided $p = 0.2835$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Easy triplets, recall@10 per seed.}
+\label{tab:recall-easy-K10}
+\begin{tabular}{c c c c}
+\toprule
+seed & vanilla & precond & $\Delta$ \\
+\midrule
+0 & 0.9650 & 0.9700 & 0.0050 \\
+1 & 0.9600 & 0.9550 & -0.0050 \\
+2 & 0.9250 & 0.9350 & 0.0100 \\
+3 & 0.9400 & 0.9450 & 0.0050 \\
+4 & 0.9700 & 0.9650 & -0.0050 \\
+\midrule
+mean $\pm$ std & 0.9520 $\pm$ 0.0169 & 0.9540 $\pm$ 0.0128 & 0.0020 $\pm$ 0.0060 \\
+paired $t$ / $p$ & \multicolumn{3}{l}{$t = 0.667$, two-sided $p = 0.5415$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Easy triplets, recall@20 per seed.}
+\label{tab:recall-easy-K20}
+\begin{tabular}{c c c c}
+\toprule
+seed & vanilla & precond & $\Delta$ \\
+\midrule
+0 & 0.9850 & 0.9850 & 0.0000 \\
+1 & 0.9900 & 0.9950 & 0.0050 \\
+2 & 0.9600 & 0.9650 & 0.0050 \\
+3 & 0.9650 & 0.9700 & 0.0050 \\
+4 & 0.9850 & 0.9900 & 0.0050 \\
+\midrule
+mean $\pm$ std & 0.9770 $\pm$ 0.0121 & 0.9810 $\pm$ 0.0116 & 0.0040 $\pm$ 0.0020 \\
+paired $t$ / $p$ & \multicolumn{3}{l}{$t = 4.000$, two-sided $p = 0.0161$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Hard triplets}
+\begin{table}[H]
+\centering
+\caption{Hard triplets, recall@1 per seed.}
+\label{tab:recall-hard-K1}
+\begin{tabular}{c c c c}
+\toprule
+seed & vanilla & precond & $\Delta$ \\
+\midrule
+0 & 0.7400 & 0.7300 & -0.0100 \\
+1 & 0.7450 & 0.7150 & -0.0300 \\
+2 & 0.7250 & 0.7200 & -0.0050 \\
+3 & 0.7100 & 0.7450 & 0.0350 \\
+4 & 0.7450 & 0.7300 & -0.0150 \\
+\midrule
+mean $\pm$ std & 0.7330 $\pm$ 0.0136 & 0.7280 $\pm$ 0.0103 & -0.0050 $\pm$ 0.0217 \\
+paired $t$ / $p$ & \multicolumn{3}{l}{$t = -0.461$, two-sided $p = 0.6686$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Hard triplets, recall@5 per seed.}
+\label{tab:recall-hard-K5}
+\begin{tabular}{c c c c}
+\toprule
+seed & vanilla & precond & $\Delta$ \\
+\midrule
+0 & 0.8650 & 0.8900 & 0.0250 \\
+1 & 0.9000 & 0.9100 & 0.0100 \\
+2 & 0.8600 & 0.8700 & 0.0100 \\
+3 & 0.8550 & 0.8800 & 0.0250 \\
+4 & 0.8950 & 0.9350 & 0.0400 \\
+\midrule
+mean $\pm$ std & 0.8750 $\pm$ 0.0187 & 0.8970 $\pm$ 0.0232 & 0.0220 $\pm$ 0.0112 \\
+paired $t$ / $p$ & \multicolumn{3}{l}{$t = 3.920$, two-sided $p = 0.0173$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Hard triplets, recall@10 per seed.}
+\label{tab:recall-hard-K10}
+\begin{tabular}{c c c c}
+\toprule
+seed & vanilla & precond & $\Delta$ \\
+\midrule
+0 & 0.9250 & 0.9650 & 0.0400 \\
+1 & 0.9350 & 0.9500 & 0.0150 \\
+2 & 0.9000 & 0.9250 & 0.0250 \\
+3 & 0.9050 & 0.9500 & 0.0450 \\
+4 & 0.9300 & 0.9650 & 0.0350 \\
+\midrule
+mean $\pm$ std & 0.9190 $\pm$ 0.0139 & 0.9510 $\pm$ 0.0146 & 0.0320 $\pm$ 0.0108 \\
+paired $t$ / $p$ & \multicolumn{3}{l}{$t = 5.942$, two-sided $p = 0.0040$} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Hard triplets, recall@20 per seed.}
+\label{tab:recall-hard-K20}
+\begin{tabular}{c c c c}
+\toprule
+seed & vanilla & precond & $\Delta$ \\
+\midrule
+0 & 0.9600 & 0.9850 & 0.0250 \\
+1 & 0.9700 & 0.9850 & 0.0150 \\
+2 & 0.9400 & 0.9650 & 0.0250 \\
+3 & 0.9500 & 0.9550 & 0.0050 \\
+4 & 0.9550 & 0.9950 & 0.0400 \\
+\midrule
+mean $\pm$ std & 0.9550 $\pm$ 0.0100 & 0.9770 $\pm$ 0.0147 & 0.0220 $\pm$ 0.0117 \\
+paired $t$ / $p$ & \multicolumn{3}{l}{$t = 3.773$, two-sided $p = 0.0196$} \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -47,20 +47,26 @@ def train_preconditioned(
     record_every: int,
     eps: float = 1e-3,
     device: str = "cpu",
+    alpha: float = 1.0,
 ):
-    """Custom training loop that applies K^{-1} to the embedding-side gradient.
+    """Custom training loop applying $K^{-\\alpha}$ to the embedding-side gradient.
 
-    Standard PyTorch backprop computes dL/dW = J^T (dL/dF). We replace that
-    with dL/dW = J^T (K^{-1} dL/dF) by computing dL/dF explicitly,
-    multiplying by K^{-1} on the data axis, and feeding that as the
-    upstream gradient to a second backward pass through the model.
+    For alpha=1 this is the canonical kBM correction. For alpha=0 the routine
+    reduces to vanilla training (preconditioner = I); intermediate alphas
+    sweep the strength of the correction.
     """
     Xt = torch.as_tensor(X, dtype=torch.float32, device=device)
     K_t = torch.as_tensor(K, dtype=torch.float32, device=device)
-    K_inv = torch.linalg.solve(
-        K_t + eps * torch.eye(K_t.shape[0], device=device),
-        torch.eye(K_t.shape[0], device=device),
-    )
+    K_reg = K_t + eps * torch.eye(K_t.shape[0], device=device)
+    if abs(alpha - 1.0) < 1e-9:
+        K_pre = torch.linalg.solve(K_reg, torch.eye(K_reg.shape[0], device=device))
+    elif abs(alpha) < 1e-9:
+        K_pre = torch.eye(K_reg.shape[0], device=device)
+    else:
+        # K^{-alpha} via eigendecomposition (K is symmetric PSD).
+        evals, evecs = torch.linalg.eigh(K_reg)
+        K_pre = evecs @ torch.diag(evals.clamp(min=eps).pow(-alpha)) @ evecs.T
+    K_inv = K_pre  # variable name kept for downstream usage
     model.to(device)
 
     triplet_arr = np.asarray(triplets, dtype=np.int64)

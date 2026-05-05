@@ -1,0 +1,71 @@
+\section{End-to-end CNN training details}
+\label{app:e2e}
+
+\subsection*{Configuration (from JSON)}
+\begin{table}[H]
+\centering
+\caption{End-to-end CIFAR-10 CNN training configuration.}
+\label{tab:e2e-config}
+\begin{tabular}{l c}
+\toprule
+key & value \\
+\midrule
+\texttt{N} & 100 \\
+\texttt{n\_classes} & 10 \\
+\texttt{M\_out} & 32 \\
+\texttt{n\_triplets} & 400 \\
+\texttt{n\_epochs} & 1200 \\
+\texttt{lr} & 1e-06 \\
+\texttt{margin} & 1.0 \\
+\texttt{record\_every} & 100 \\
+\texttt{eps} & 0.01 \\
+\texttt{data\_root} & ./data \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Per-epoch losses, all seeds}
+\begin{table}[H]
+\centering
+\caption{End-to-end CIFAR-10 CNN per-epoch losses.}
+\label{tab:e2e-losses}
+\begin{tabular}{c | c c c c c c c c c c }
+\toprule
+epoch & van s0 & pre s0 & van s1 & pre s1 & van s2 & pre s2 & van s3 & pre s3 & van s4 & pre s4 \\
+\midrule
+0 & 891.205 & 891.205 & 2106.966 & 2106.966 & 802.178 & 802.178 & 1732.498 & 1732.498 & 1623.506 & 1623.506 \\
+100 & 324.500 & 873.434 & 306.762 & 2094.602 & 334.080 & 798.085 & 340.527 & 1716.405 & 317.976 & 1600.106 \\
+200 & 295.110 & 860.898 & 277.711 & 2087.295 & 309.199 & 793.970 & 303.921 & 1710.595 & 284.642 & 1586.846 \\
+300 & 271.124 & 848.851 & 257.864 & 2084.196 & 281.993 & 789.642 & 279.976 & 1706.481 & 259.959 & 1574.193 \\
+400 & 246.671 & 838.095 & 240.646 & 2087.463 & 257.591 & 785.507 & 260.632 & 1709.538 & 235.779 & 1563.187 \\
+500 & 222.499 & 828.348 & 222.869 & 2096.772 & 232.122 & 782.471 & 242.355 & 1713.987 & 217.109 & 1542.751 \\
+600 & 197.380 & 819.983 & 207.645 & 2112.104 & 210.900 & 779.608 & 225.998 & 1729.226 & 202.598 & 1515.682 \\
+700 & 178.045 & 814.327 & 194.076 & 2130.343 & 190.588 & 778.207 & 210.488 & 1741.576 & 190.454 & 1497.013 \\
+800 & 162.781 & 810.154 & 181.207 & 2152.861 & 173.055 & 776.404 & 196.101 & 1751.811 & 179.151 & 1481.223 \\
+900 & 150.368 & 807.700 & 169.408 & 2178.211 & 156.788 & 775.567 & 183.269 & 1762.599 & 167.906 & 1469.474 \\
+1000 & 138.779 & 807.179 & 159.568 & 2205.305 & 141.383 & 770.480 & 171.060 & 1773.667 & 156.563 & 1461.911 \\
+1100 & 129.158 & 807.027 & 150.419 & 2236.365 & 125.302 & 762.438 & 159.535 & 1787.418 & 145.380 & 1461.713 \\
+1199 & 120.513 & 808.231 & 142.510 & 2269.509 & 111.302 & 758.978 & 149.131 & 1798.283 & 134.476 & 1467.972 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Per-seed final slopes}
+\begin{table}[H]
+\centering
+\caption{End-to-end CIFAR-10 CNN: per-seed slopes and $R^2$.}
+\label{tab:e2e-slopes}
+\begin{tabular}{c c c c c c c}
+\toprule
+seed & vanilla slope & vanilla $R^2$ & van modes & precond slope & precond $R^2$ & pre modes \\
+\midrule
+0 & 1.1206 & 0.6261 & 100 & 1.0252 & 0.6956 & 100 \\
+1 & 1.2510 & 0.7137 & 100 & 1.0677 & 0.6602 & 100 \\
+2 & 1.0523 & 0.6385 & 100 & 0.7595 & 0.5409 & 100 \\
+3 & 1.1785 & 0.7716 & 100 & 0.9580 & 0.6725 & 100 \\
+4 & 1.1365 & 0.6573 & 100 & 1.0372 & 0.6733 & 100 \\
+\midrule
+mean $\pm$ std & 1.1478 $\pm$ 0.0657 & & & 0.9695 $\pm$ 0.1110 & & \\
+\bottomrule
+\end{tabular}
+\end{table}

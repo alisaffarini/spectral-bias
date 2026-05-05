@@ -1,0 +1,100 @@
+\section{Per-seed preconditioner effects}
+\label{app:precond-perseed}
+
+Per-seed log-log slopes for the spectral preconditioner experiments. For each seed and each variant (vanilla / preconditioned) we fit $\log |\widetilde{G}_{ii}(T) - \widetilde{G}_{ii}(0)|$ against $\log \lambda_i$ at the final recorded epoch.
+
+\subsection{Synthetic depth-1, $N=50$ (\texttt{preconditioner\_N50.json})}
+\begin{table}[H]
+\centering
+\caption{Per-seed slopes, synthetic $N=50$, depth $1$.}
+\label{tab:precond-N50}
+\begin{tabular}{c c c c c c c}
+\toprule
+seed & variant & slope & $R^2$ & $\lambda_{\min}$ & $\lambda_{\max}$ & modes \\
+\midrule
+0 & vanilla & 1.9216 & 0.8939 & 3.531e-01 & 1.907e+01 & 50 \\
+0 & precond & 0.7585 & 0.7915 & 3.531e-01 & 1.907e+01 & 50 \\
+1 & vanilla & 1.8951 & 0.9189 & 3.583e-01 & 1.922e+01 & 50 \\
+1 & precond & 0.8295 & 0.8158 & 3.583e-01 & 1.922e+01 & 50 \\
+2 & vanilla & 1.9106 & 0.7913 & 3.582e-01 & 1.935e+01 & 50 \\
+2 & precond & 0.5606 & 0.4198 & 3.582e-01 & 1.935e+01 & 50 \\
+3 & vanilla & 2.1023 & 0.8889 & 3.621e-01 & 1.901e+01 & 50 \\
+3 & precond & 0.7936 & 0.6784 & 3.621e-01 & 1.901e+01 & 50 \\
+4 & vanilla & 2.1512 & 0.7815 & 3.416e-01 & 1.906e+01 & 50 \\
+4 & precond & 0.7352 & 0.7249 & 3.416e-01 & 1.906e+01 & 50 \\
+\midrule
+\multicolumn{2}{l}{vanilla mean $\pm$ std} & 1.9962 $\pm$ 0.1081 & & & & \\
+\multicolumn{2}{l}{precond mean $\pm$ std} & 0.7355 $\pm$ 0.0931 & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{CIFAR-10 head-only (\texttt{cifar10.json})}
+\begin{table}[H]
+\centering
+\caption{Per-seed slopes, frozen-feature CIFAR-10 with depth-2 head.}
+\label{tab:precond-cifar10}
+\begin{tabular}{c c c c c c c}
+\toprule
+seed & variant & slope & $R^2$ & $\lambda_{\min}$ & $\lambda_{\max}$ & modes \\
+\midrule
+0 & vanilla & 2.0656 & 0.9642 & 6.295e-01 & 2.834e+02 & 400 \\
+0 & precond & 1.5838 & 0.9702 & 6.295e-01 & 2.834e+02 & 400 \\
+1 & vanilla & 2.0635 & 0.9655 & 7.107e-01 & 2.829e+02 & 400 \\
+1 & precond & 1.6009 & 0.9653 & 7.107e-01 & 2.829e+02 & 400 \\
+2 & vanilla & 2.0374 & 0.9702 & 3.004e-01 & 2.830e+02 & 400 \\
+2 & precond & 1.5611 & 0.9655 & 3.004e-01 & 2.830e+02 & 400 \\
+3 & vanilla & 2.0583 & 0.9650 & 5.645e-01 & 2.831e+02 & 400 \\
+3 & precond & 1.5890 & 0.9657 & 5.645e-01 & 2.831e+02 & 400 \\
+4 & vanilla & 2.0646 & 0.9674 & 3.487e-01 & 2.831e+02 & 400 \\
+4 & precond & 1.6081 & 0.9667 & 3.487e-01 & 2.831e+02 & 400 \\
+\midrule
+\multicolumn{2}{l}{vanilla mean $\pm$ std} & 2.0579 $\pm$ 0.0106 & & & & \\
+\multicolumn{2}{l}{precond mean $\pm$ std} & 1.5886 $\pm$ 0.0162 & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{CIFAR-10 end-to-end CNN (\texttt{cifar10\_end2end.json})}
+\begin{table}[H]
+\centering
+\caption{Per-seed slopes, end-to-end CNN trained on CIFAR-10 from scratch.}
+\label{tab:precond-cifar10-e2e}
+\begin{tabular}{c c c c c c c}
+\toprule
+seed & variant & slope & $R^2$ & $\lambda_{\min}$ & $\lambda_{\max}$ & modes \\
+\midrule
+0 & vanilla & 1.1206 & 0.6261 & 3.402e+00 & 2.584e+04 & 100 \\
+0 & precond & 1.0252 & 0.6956 & 3.402e+00 & 2.584e+04 & 100 \\
+1 & vanilla & 1.2510 & 0.7137 & 2.861e+00 & 6.960e+04 & 100 \\
+1 & precond & 1.0677 & 0.6602 & 2.861e+00 & 6.960e+04 & 100 \\
+2 & vanilla & 1.0523 & 0.6385 & 2.877e+00 & 4.613e+04 & 100 \\
+2 & precond & 0.7595 & 0.5409 & 2.877e+00 & 4.613e+04 & 100 \\
+3 & vanilla & 1.1785 & 0.7716 & 3.261e+00 & 5.692e+04 & 100 \\
+3 & precond & 0.9580 & 0.6725 & 3.261e+00 & 5.692e+04 & 100 \\
+4 & vanilla & 1.1365 & 0.6573 & 3.366e+00 & 8.366e+04 & 100 \\
+4 & precond & 1.0372 & 0.6733 & 3.366e+00 & 8.366e+04 & 100 \\
+\midrule
+\multicolumn{2}{l}{vanilla mean $\pm$ std} & 1.1478 $\pm$ 0.0657 & & & & \\
+\multicolumn{2}{l}{precond mean $\pm$ std} & 0.9695 $\pm$ 0.1110 & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Triplet satisfaction (synthetic $N=50$)}
+\begin{table}[H]
+\centering
+\caption{Per-seed overall triplet satisfaction and per-bin satisfaction for synthetic $N=50$.}
+\label{tab:precond-sat}
+\begin{tabular}{c c c c c}
+\toprule
+seed & overall vanilla & overall precond & bin0 (vanilla / precond) & bin1 (vanilla / precond) \\
+\midrule
+0 & 0.8300 & 0.8100 & 0.8305 / 0.8017 & 0.8269 / 0.8654 \\
+1 & 0.8325 & 0.8025 & 0.8275 / 0.7953 & 0.8621 / 0.8448 \\
+2 & 0.8300 & 0.8100 & 0.8373 / 0.8136 & 0.7903 / 0.7903 \\
+3 & 0.8200 & 0.8550 & 0.8099 / 0.8421 & 0.8727 / 0.9273 \\
+4 & 0.8375 & 0.7800 & 0.8418 / 0.7712 & 0.8043 / 0.8478 \\
+\bottomrule
+\end{tabular}
+\end{table}

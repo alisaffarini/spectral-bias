@@ -1,0 +1,532 @@
+\section{Equivalence error trajectories}
+\label{app:equiv-traj}
+
+Per-seed network-vs-ODE relative Frobenius error trajectories for each of the six $(N, L)$ equivalence configurations with $N \in \{10, 30\}$, $L \in \{1, 2, 3\}$. We tabulate the recorded epochs at five time-points (the first epoch, the 25\%, 50\%, 75\% recorded indices, and the final epoch) together with the network triplet loss and the ODE-side reference loss at the same time-stamps.
+
+\subsection{$N=10$, $L=1$}
+\begin{table}[H]
+\centering
+\caption{Seed 0: equivalence trajectory for $N=10$, $L=1$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L1-s0}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.000920 & 214.6828 & 214.6828 \\
+12 & 48 & 0.055847 & 177.9972 & 121.0841 \\
+25 & 100 & 0.083161 & 147.9146 & 82.5051 \\
+38 & 152 & 0.103474 & 126.6549 & 60.2492 \\
+50 & 199 & 0.116503 & 112.3770 & 47.6099 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 1: equivalence trajectory for $N=10$, $L=1$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L1-s1}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.000713 & 196.2797 & 196.2797 \\
+12 & 48 & 0.044502 & 169.8085 & 132.5748 \\
+25 & 100 & 0.079122 & 148.3988 & 87.9739 \\
+38 & 152 & 0.102478 & 130.9446 & 61.2150 \\
+50 & 199 & 0.122485 & 116.8609 & 41.8706 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 2: equivalence trajectory for $N=10$, $L=1$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L1-s2}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.000746 & 181.0011 & 181.0011 \\
+12 & 48 & 0.049859 & 148.7090 & 98.4879 \\
+25 & 100 & 0.078367 & 121.3163 & 54.1335 \\
+38 & 152 & 0.087081 & 98.9355 & 37.6738 \\
+50 & 199 & 0.096616 & 82.2313 & 26.9935 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 3: equivalence trajectory for $N=10$, $L=1$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L1-s3}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.000865 & 118.9332 & 118.9331 \\
+12 & 48 & 0.039779 & 81.1505 & 46.1789 \\
+25 & 100 & 0.056243 & 60.1697 & 24.8312 \\
+38 & 152 & 0.065871 & 47.8451 & 14.7572 \\
+50 & 199 & 0.068721 & 40.3715 & 11.8550 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 4: equivalence trajectory for $N=10$, $L=1$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L1-s4}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.000787 & 206.6510 & 206.6511 \\
+12 & 48 & 0.058956 & 177.3745 & 124.3036 \\
+25 & 100 & 0.093997 & 150.9151 & 76.3884 \\
+38 & 152 & 0.110130 & 129.3624 & 53.5922 \\
+50 & 199 & 0.127706 & 112.8437 & 34.5420 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Final relative Frobenius error, $N=10$, $L=1$, 5 seeds: mean $\pm$ std = 0.1064 $\pm$ 0.0216.
+
+\subsection{$N=10$, $L=2$}
+\begin{table}[H]
+\centering
+\caption{Seed 0: equivalence trajectory for $N=10$, $L=2$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L2-s0}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.013670 & 85.9280 & 85.9279 \\
+12 & 48 & 0.114410 & 20.9276 & 47.8836 \\
+25 & 100 & 0.097920 & 18.8113 & 32.6933 \\
+38 & 152 & 0.089685 & 17.5066 & 24.5510 \\
+50 & 199 & 0.089758 & 16.1505 & 21.9468 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 1: equivalence trajectory for $N=10$, $L=2$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L2-s1}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.011152 & 87.6048 & 87.6048 \\
+12 & 48 & 0.183930 & 11.7804 & 50.5630 \\
+25 & 100 & 0.168290 & 5.9569 & 31.7561 \\
+38 & 152 & 0.155129 & 5.0000 & 19.6182 \\
+50 & 199 & 0.148853 & 5.0000 & 13.2763 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 2: equivalence trajectory for $N=10$, $L=2$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L2-s2}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.011398 & 83.1670 & 83.1670 \\
+12 & 48 & 0.100036 & 11.1625 & 40.8897 \\
+25 & 100 & 0.088076 & 8.9363 & 26.0093 \\
+38 & 152 & 0.077844 & 7.6849 & 17.0908 \\
+50 & 199 & 0.074960 & 6.7110 & 12.9132 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 3: equivalence trajectory for $N=10$, $L=2$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L2-s3}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.011714 & 66.2051 & 66.2052 \\
+12 & 48 & 0.066919 & 5.3867 & 23.2983 \\
+25 & 100 & 0.063801 & 3.5373 & 12.6347 \\
+38 & 152 & 0.059544 & 3.0000 & 8.7523 \\
+50 & 199 & 0.052276 & 3.0000 & 6.5367 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 4: equivalence trajectory for $N=10$, $L=2$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L2-s4}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.015031 & 96.8706 & 96.8707 \\
+12 & 48 & 0.157060 & 13.4328 & 49.3138 \\
+25 & 100 & 0.141971 & 11.0000 & 30.1349 \\
+38 & 152 & 0.128493 & 11.0000 & 20.8923 \\
+50 & 199 & 0.122624 & 11.0000 & 16.1031 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Final relative Frobenius error, $N=10$, $L=2$, 5 seeds: mean $\pm$ std = 0.0977 $\pm$ 0.0343.
+
+\subsection{$N=10$, $L=3$}
+\begin{table}[H]
+\centering
+\caption{Seed 0: equivalence trajectory for $N=10$, $L=3$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L3-s0}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.011563 & 58.7713 & 58.7713 \\
+12 & 48 & 0.075158 & 22.4994 & 37.1079 \\
+25 & 100 & 0.101546 & 19.9816 & 29.0193 \\
+38 & 152 & 0.135532 & 18.9975 & 25.0375 \\
+50 & 199 & 0.175527 & 18.6781 & 23.4030 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 1: equivalence trajectory for $N=10$, $L=3$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L3-s1}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.011877 & 53.7634 & 53.7634 \\
+12 & 48 & 0.085347 & 12.7238 & 32.7986 \\
+25 & 100 & 0.157023 & 7.7701 & 23.5720 \\
+38 & 152 & 0.219766 & 5.5515 & 18.1482 \\
+50 & 199 & 0.241437 & 5.0000 & 15.0736 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 2: equivalence trajectory for $N=10$, $L=3$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L3-s2}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.008862 & 54.5120 & 54.5121 \\
+12 & 48 & 0.118163 & 12.1053 & 33.0073 \\
+25 & 100 & 0.170477 & 9.1557 & 22.5895 \\
+38 & 152 & 0.192762 & 8.4519 & 16.9520 \\
+50 & 199 & 0.221026 & 8.1288 & 13.7561 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 3: equivalence trajectory for $N=10$, $L=3$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L3-s3}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.010433 & 48.3910 & 48.3910 \\
+12 & 48 & 0.114773 & 7.6822 & 22.4907 \\
+25 & 100 & 0.159257 & 5.0336 & 15.3803 \\
+38 & 152 & 0.196783 & 4.0321 & 11.7348 \\
+50 & 199 & 0.233671 & 3.3912 & 9.5792 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 4: equivalence trajectory for $N=10$, $L=3$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N10-L3-s4}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.012393 & 55.1297 & 55.1297 \\
+12 & 48 & 0.081758 & 15.3749 & 31.7146 \\
+25 & 100 & 0.134515 & 11.8579 & 22.9224 \\
+38 & 152 & 0.172147 & 11.2523 & 18.6963 \\
+50 & 199 & 0.175555 & 11.0000 & 16.8131 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Final relative Frobenius error, $N=10$, $L=3$, 5 seeds: mean $\pm$ std = 0.2094 $\pm$ 0.0284.
+
+\subsection{$N=30$, $L=1$}
+\begin{table}[H]
+\centering
+\caption{Seed 0: equivalence trajectory for $N=30$, $L=1$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L1-s0}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.001001 & 506.3147 & 506.3148 \\
+12 & 48 & 0.053231 & 392.3724 & 265.7059 \\
+25 & 100 & 0.083237 & 322.0219 & 168.8397 \\
+38 & 152 & 0.100588 & 278.1967 & 114.3567 \\
+50 & 199 & 0.113408 & 246.2743 & 77.4603 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 1: equivalence trajectory for $N=30$, $L=1$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L1-s1}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.000926 & 614.0709 & 614.0709 \\
+12 & 48 & 0.058660 & 498.3489 & 327.2813 \\
+25 & 100 & 0.092734 & 408.8470 & 177.7836 \\
+38 & 152 & 0.111317 & 339.8068 & 108.1152 \\
+50 & 199 & 0.123212 & 289.5587 & 72.0105 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 2: equivalence trajectory for $N=30$, $L=1$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L1-s2}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.000834 & 495.7800 & 495.7801 \\
+12 & 48 & 0.045264 & 396.1010 & 273.3048 \\
+25 & 100 & 0.073474 & 326.5455 & 161.8953 \\
+38 & 152 & 0.093259 & 274.4092 & 100.2101 \\
+50 & 199 & 0.106597 & 235.2355 & 65.5498 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 3: equivalence trajectory for $N=30$, $L=1$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L1-s3}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.001277 & 666.7232 & 666.7233 \\
+12 & 48 & 0.065395 & 535.7491 & 348.4093 \\
+25 & 100 & 0.107618 & 428.8598 & 193.2314 \\
+38 & 152 & 0.135601 & 352.7078 & 108.8963 \\
+50 & 199 & 0.154490 & 302.4754 & 67.4947 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 4: equivalence trajectory for $N=30$, $L=1$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L1-s4}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.001164 & 605.2369 & 605.2369 \\
+12 & 48 & 0.062317 & 488.7561 & 317.9965 \\
+25 & 100 & 0.097631 & 390.6882 & 176.8374 \\
+38 & 152 & 0.118598 & 322.5436 & 107.1377 \\
+50 & 199 & 0.132430 & 270.5649 & 77.5414 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Final relative Frobenius error, $N=30$, $L=1$, 5 seeds: mean $\pm$ std = 0.1260 $\pm$ 0.0167.
+
+\subsection{$N=30$, $L=2$}
+\begin{table}[H]
+\centering
+\caption{Seed 0: equivalence trajectory for $N=30$, $L=2$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L2-s0}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.019772 & 223.3703 & 223.3703 \\
+12 & 48 & 0.179667 & 16.9405 & 99.6192 \\
+25 & 100 & 0.168244 & 4.1802 & 55.5695 \\
+38 & 152 & 0.163632 & 4.0000 & 34.3025 \\
+50 & 199 & 0.162129 & 4.0000 & 22.9690 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 1: equivalence trajectory for $N=30$, $L=2$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L2-s1}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.024065 & 264.6318 & 264.6319 \\
+12 & 48 & 0.244581 & 12.7420 & 125.6043 \\
+25 & 100 & 0.244870 & 3.7287 & 62.0091 \\
+38 & 152 & 0.239006 & 2.0000 & 35.4631 \\
+50 & 199 & 0.237100 & 2.0000 & 19.8643 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 2: equivalence trajectory for $N=30$, $L=2$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L2-s2}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.017973 & 232.0945 & 232.0945 \\
+12 & 48 & 0.214655 & 12.8721 & 115.1513 \\
+25 & 100 & 0.196163 & 0.3713 & 66.0435 \\
+38 & 152 & 0.187968 & 0.0000 & 35.3589 \\
+50 & 199 & 0.185210 & 0.0000 & 19.2819 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 3: equivalence trajectory for $N=30$, $L=2$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L2-s3}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.028865 & 271.5819 & 271.5820 \\
+12 & 48 & 0.280631 & 11.0035 & 124.9133 \\
+25 & 100 & 0.272234 & 0.0000 & 56.4871 \\
+38 & 152 & 0.269577 & 0.0000 & 26.6983 \\
+50 & 199 & 0.268032 & 0.0000 & 15.2287 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 4: equivalence trajectory for $N=30$, $L=2$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L2-s4}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.024126 & 259.1575 & 259.1575 \\
+12 & 48 & 0.258642 & 14.0089 & 116.0627 \\
+25 & 100 & 0.241244 & 0.7865 & 58.7949 \\
+38 & 152 & 0.228635 & 0.0000 & 32.5296 \\
+50 & 199 & 0.225354 & 0.0000 & 20.2713 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Final relative Frobenius error, $N=30$, $L=2$, 5 seeds: mean $\pm$ std = 0.2156 $\pm$ 0.0377.
+
+\subsection{$N=30$, $L=3$}
+\begin{table}[H]
+\centering
+\caption{Seed 0: equivalence trajectory for $N=30$, $L=3$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L3-s0}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.017693 & 160.6104 & 160.6104 \\
+12 & 48 & 0.131446 & 14.9266 & 77.9091 \\
+25 & 100 & 0.216280 & 4.2152 & 44.9625 \\
+38 & 152 & 0.220143 & 4.0000 & 29.8939 \\
+50 & 199 & 0.218784 & 4.0000 & 20.6063 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 1: equivalence trajectory for $N=30$, $L=3$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L3-s1}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.018608 & 174.4275 & 174.4275 \\
+12 & 48 & 0.096400 & 11.3126 & 86.0868 \\
+25 & 100 & 0.144113 & 2.8106 & 43.6845 \\
+38 & 152 & 0.150158 & 2.0000 & 24.9824 \\
+50 & 199 & 0.148644 & 2.0000 & 15.9909 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 2: equivalence trajectory for $N=30$, $L=3$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L3-s2}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.014676 & 164.4582 & 164.4582 \\
+12 & 48 & 0.161947 & 12.3523 & 85.9750 \\
+25 & 100 & 0.252987 & 0.0797 & 51.8453 \\
+38 & 152 & 0.255928 & 0.0000 & 32.5765 \\
+50 & 199 & 0.254324 & 0.0000 & 19.7801 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 3: equivalence trajectory for $N=30$, $L=3$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L3-s3}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.017828 & 167.4935 & 167.4935 \\
+12 & 48 & 0.132251 & 7.4126 & 85.0525 \\
+25 & 100 & 0.174941 & 0.0000 & 41.5284 \\
+38 & 152 & 0.171941 & 0.0000 & 23.5201 \\
+50 & 199 & 0.170278 & 0.0000 & 13.4652 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Seed 4: equivalence trajectory for $N=30$, $L=3$. \texttt{rel\_err} is $\|G_{\mathrm{net}} - G_{\mathrm{ode}}\|_F / \|G_{\mathrm{net}}\|_F$.}
+\label{tab:equiv-N30-L3-s4}
+\begin{tabular}{c c c c c}
+\toprule
+index & epoch & rel\_err & net loss & ODE loss \\
+\midrule
+0 & 0 & 0.015692 & 161.8157 & 161.8157 \\
+12 & 48 & 0.127256 & 12.8296 & 79.6979 \\
+25 & 100 & 0.195308 & 1.7468 & 44.5627 \\
+38 & 152 & 0.218119 & 0.0000 & 25.5578 \\
+50 & 199 & 0.217233 & 0.0000 & 17.0729 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Final relative Frobenius error, $N=30$, $L=3$, 5 seeds: mean $\pm$ std = 0.2019 $\pm$ 0.0377.

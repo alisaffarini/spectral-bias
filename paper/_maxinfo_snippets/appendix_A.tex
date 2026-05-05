@@ -1,0 +1,143 @@
+\section{Full per-seed spectral-bias slopes}
+\label{app:per-seed-slopes}
+
+For each of the six synthetic configurations $(N, L)$ with $N \in \{30, 100, 1000\}$, $L \in \{1, 2\}$, we recompute the log-log slope of $|\widetilde{G}_{ii}(T) - \widetilde{G}_{ii}(0)|$ versus $\lambda_i$ at the final recorded epoch directly from the JSON per seed. Slopes are obtained by ordinary least squares (\texttt{numpy.polyfit}) on the masked log-data; modes with non-positive eigenvalue or non-positive displacement are dropped. $R^2$ is the coefficient of determination of the same regression.
+
+\subsection{$N=30$, $L=1$}
+\begin{table}[H]
+\centering
+\caption{Per-seed slope, $R^2$, eigenvalue range, and number of modes used for $N=30$, $L=1$ (\texttt{spectral\_bias\_N30\_L1.json}).}
+\label{tab:slopeA-N30-L1}
+\begin{tabular}{c c c c c c}
+\toprule
+seed & slope & $R^2$ & $\lambda_{\min}$ & $\lambda_{\max}$ & modes \\
+\midrule
+0 & 2.0819 & 0.7999 & 4.550e-01 & 1.198e+01 & 30 \\
+1 & 2.2153 & 0.7198 & 4.561e-01 & 1.207e+01 & 30 \\
+2 & 2.0908 & 0.7361 & 4.419e-01 & 1.222e+01 & 30 \\
+3 & 2.1431 & 0.8416 & 4.984e-01 & 1.231e+01 & 30 \\
+4 & 2.4095 & 0.7655 & 4.517e-01 & 1.212e+01 & 30 \\
+\midrule
+\textbf{mean $\pm$ std} & 2.1881 $\pm$ 0.1204 & \multicolumn{4}{l}{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{$N=100$, $L=1$}
+\begin{table}[H]
+\centering
+\caption{Per-seed slope, $R^2$, eigenvalue range, and number of modes used for $N=100$, $L=1$ (\texttt{spectral\_bias\_N100\_L1.json}).}
+\label{tab:slopeA-N100-L1}
+\begin{tabular}{c c c c c c}
+\toprule
+seed & slope & $R^2$ & $\lambda_{\min}$ & $\lambda_{\max}$ & modes \\
+\midrule
+0 & 1.4757 & 0.9733 & 2.468e-01 & 3.639e+01 & 100 \\
+1 & 1.4551 & 0.9828 & 2.487e-01 & 3.634e+01 & 100 \\
+2 & 1.5206 & 0.9685 & 2.494e-01 & 3.695e+01 & 100 \\
+3 & 1.5206 & 0.9763 & 2.601e-01 & 3.609e+01 & 100 \\
+4 & 1.4747 & 0.9640 & 2.431e-01 & 3.566e+01 & 100 \\
+\midrule
+\textbf{mean $\pm$ std} & 1.4893 $\pm$ 0.0266 & \multicolumn{4}{l}{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{$N=1000$, $L=1$}
+\begin{table}[H]
+\centering
+\caption{Per-seed slope, $R^2$, eigenvalue range, and number of modes used for $N=1000$, $L=1$ (\texttt{spectral\_bias\_N1000\_L1.json}).}
+\label{tab:slopeA-N1000-L1}
+\begin{tabular}{c c c c c c}
+\toprule
+seed & slope & $R^2$ & $\lambda_{\min}$ & $\lambda_{\max}$ & modes \\
+\midrule
+0 & 1.3803 & 0.9939 & 1.484e-01 & 3.444e+02 & 1000 \\
+1 & 1.3799 & 0.9942 & 1.452e-01 & 3.443e+02 & 1000 \\
+2 & 1.3801 & 0.9941 & 1.428e-01 & 3.440e+02 & 1000 \\
+3 & 1.3792 & 0.9941 & 1.422e-01 & 3.446e+02 & 1000 \\
+4 & 1.3808 & 0.9938 & 1.466e-01 & 3.443e+02 & 1000 \\
+\midrule
+\textbf{mean $\pm$ std} & 1.3800 $\pm$ 0.0005 & \multicolumn{4}{l}{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{$N=30$, $L=2$}
+\begin{table}[H]
+\centering
+\caption{Per-seed slope, $R^2$, eigenvalue range, and number of modes used for $N=30$, $L=2$ (\texttt{spectral\_bias\_N30\_L2.json}).}
+\label{tab:slopeA-N30-L2}
+\begin{tabular}{c c c c c c}
+\toprule
+seed & slope & $R^2$ & $\lambda_{\min}$ & $\lambda_{\max}$ & modes \\
+\midrule
+0 & 1.3756 & 0.3695 & 1.015e+00 & 2.374e+01 & 30 \\
+1 & 1.8647 & 0.5863 & 9.956e-01 & 2.381e+01 & 30 \\
+2 & 1.4925 & 0.3434 & 9.991e-01 & 2.397e+01 & 30 \\
+3 & 1.9532 & 0.6227 & 1.077e+00 & 2.410e+01 & 30 \\
+4 & 1.6237 & 0.5915 & 1.014e+00 & 2.386e+01 & 30 \\
+\midrule
+\textbf{mean $\pm$ std} & 1.6620 $\pm$ 0.2182 & \multicolumn{4}{l}{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{$N=100$, $L=2$}
+\begin{table}[H]
+\centering
+\caption{Per-seed slope, $R^2$, eigenvalue range, and number of modes used for $N=100$, $L=2$ (\texttt{spectral\_bias\_N100\_L2.json}).}
+\label{tab:slopeA-N100-L2}
+\begin{tabular}{c c c c c c}
+\toprule
+seed & slope & $R^2$ & $\lambda_{\min}$ & $\lambda_{\max}$ & modes \\
+\midrule
+0 & 1.8878 & 0.9713 & 7.555e-01 & 7.443e+01 & 100 \\
+1 & 1.9281 & 0.9727 & 7.318e-01 & 7.433e+01 & 100 \\
+2 & 1.9802 & 0.9426 & 7.075e-01 & 7.489e+01 & 100 \\
+3 & 1.9448 & 0.9579 & 7.326e-01 & 7.410e+01 & 100 \\
+4 & 1.9506 & 0.9520 & 7.183e-01 & 7.370e+01 & 100 \\
+\midrule
+\textbf{mean $\pm$ std} & 1.9383 $\pm$ 0.0303 & \multicolumn{4}{l}{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{$N=1000$, $L=2$}
+\begin{table}[H]
+\centering
+\caption{Per-seed slope, $R^2$, eigenvalue range, and number of modes used for $N=1000$, $L=2$ (\texttt{spectral\_bias\_N1000\_L2.json}).}
+\label{tab:slopeA-N1000-L2}
+\begin{tabular}{c c c c c c}
+\toprule
+seed & slope & $R^2$ & $\lambda_{\min}$ & $\lambda_{\max}$ & modes \\
+\midrule
+0 & 1.5945 & 0.9835 & 4.825e-01 & 7.195e+02 & 1000 \\
+1 & 1.5960 & 0.9841 & 4.735e-01 & 7.195e+02 & 1000 \\
+2 & 1.6003 & 0.9849 & 4.666e-01 & 7.193e+02 & 1000 \\
+3 & 1.5969 & 0.9851 & 4.676e-01 & 7.198e+02 & 1000 \\
+4 & 1.5969 & 0.9827 & 4.696e-01 & 7.195e+02 & 1000 \\
+\midrule
+\textbf{mean $\pm$ std} & 1.5969 $\pm$ 0.0019 & \multicolumn{4}{l}{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Aggregate summary}
+\begin{table}[H]
+\centering
+\caption{Mean $\pm$ standard deviation of fitted log-log slopes over 5 seeds, all six configurations.}
+\label{tab:slope-aggregate}
+\begin{tabular}{c c c c c c c c}
+\toprule
+$N$ & $L$ & seed 0 & seed 1 & seed 2 & seed 3 & seed 4 & mean $\pm$ std \\
+\midrule
+30 & 1 & 2.0819 & 2.2153 & 2.0908 & 2.1431 & 2.4095 & 2.1881 $\pm$ 0.1204 \\
+100 & 1 & 1.4757 & 1.4551 & 1.5206 & 1.5206 & 1.4747 & 1.4893 $\pm$ 0.0266 \\
+1000 & 1 & 1.3803 & 1.3799 & 1.3801 & 1.3792 & 1.3808 & 1.3800 $\pm$ 0.0005 \\
+30 & 2 & 1.3756 & 1.8647 & 1.4925 & 1.9532 & 1.6237 & 1.6620 $\pm$ 0.2182 \\
+100 & 2 & 1.8878 & 1.9281 & 1.9802 & 1.9448 & 1.9506 & 1.9383 $\pm$ 0.0303 \\
+1000 & 2 & 1.5945 & 1.5960 & 1.6003 & 1.5969 & 1.5969 & 1.5969 $\pm$ 0.0019 \\
+\bottomrule
+\end{tabular}
+\end{table}

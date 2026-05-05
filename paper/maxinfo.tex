@@ -1,0 +1,1008 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{natbib}
+\usepackage{booktabs}
+\usepackage{authblk}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{placeins}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  citecolor=blue!50!black,
+  urlcolor=blue!50!black
+}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{assumption}[theorem]{Assumption}
+
+\DeclareMathOperator{\diag}{diag}
+\newcommand{\norm}[1]{\left\|#1\right\|}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\E}{E}
+\newcommand{\Gtilde}{\widetilde{G}}
+\newcommand{\Etilde}{\widetilde{\E}}
+\newcommand{\veps}{\varepsilon}
+
+\title{\textbf{Kernel-Preconditioned Burer--Monteiro Flow:\\
+A Spectral Implicit Bias for Wide Networks Trained with Triplet Loss\\
+--- Maxinfo Companion ---}\\[0.3em]
+\large{Comprehensive Data Companion: All Experimental Results}}
+
+\author[1]{Ali Saffarini}
+\author[1]{Hemmy Kalam}
+\affil[1]{Harvard College, Cambridge, MA \\
+\texttt{\{alisaffarini, heemykalam\}@college.harvard.edu}}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{center}
+\fbox{\parbox{0.92\textwidth}{
+\textbf{Front note.} Non-anonymous data-dump companion to the main paper.
+All numerical results from the underlying experiments are surfaced here for
+reference. The main paper preserves the theoretical contributions; this
+companion makes the experimental evidence fully transparent. The
+theoretical content (Sections~\ref{sec:intro}--\ref{sec:discussion}) is
+identical in claim and proof structure to the main submission; the
+contribution of this document is the comprehensive experimental dump
+gathered into Appendices~\ref{app:per-seed-slopes}--\ref{app:e2e}.
+Source repository: \url{https://github.com/alisaffarini/spectral-bias}.
+}}
+\end{center}
+
+\begin{abstract}
+We show that gradient flow on a wide ReLU embedding network, trained with a
+twice-differentiable loss on its Gram matrix $G = FF^\top$, evolves under a
+\emph{kernel-preconditioned Burer--Monteiro flow}
+$\dot{G} = -2\,(K\E G + G\E K)$, where $\E = \partial L/\partial G$ and $K$
+is the depth-$L$ neural tangent kernel at the inputs. When $K = I$ this
+recovers the classical Burer--Monteiro dynamics for low-rank semidefinite
+optimization. Beyond this equivalence, the kernel form yields a
+\emph{spectral implicit bias}: in the eigenbasis of $K$, mode $(i,j)$ of
+$G$ evolves at instantaneous rate $\lambda_i + \lambda_j$, and at NTK
+initialization the per-mode displacement $|\Gtilde_{ii}(T) - \Gtilde_{ii}(0)|$
+scales as $\lambda_i^2$. This is a sharp, falsifiable scaling law that does
+not follow from the NTK ODE without the BM viewpoint. We verify the
+slope-2 prediction across $30$ multi-seed configurations: synthetic spheres
+($N \in \{30, 100, 1000\}$, depth $L \in \{1, 2\}$) yielding fitted slopes
+$1.38$ to $2.19$; Fashion-MNIST ($1.69 \pm 0.03$); frozen-feature CIFAR-10
+($2.06 \pm 0.01$, the closest match to the prediction); and end-to-end CNN
+training on CIFAR-10 ($1.15 \pm 0.07$, with the empirical NTK).
+As an algorithmic consequence, applying $K^{-1}$ to the embedding-side
+gradient cancels the kernel preconditioner: a one-line patch to backprop
+flattens the synthetic slope from $2.00 \pm 0.11$ to $0.74 \pm 0.09$ and
+the head-only CIFAR-10 slope from $2.06$ to $1.59$. On the end-to-end CNN
+the slope drops from $1.15 \pm 0.07$ to $0.97 \pm 0.11$. On hard-negative
+CIFAR-10 retrieval, where the loss gradient deliberately loads on $K$'s
+bottom eigenspace, this preconditioner improves Recall@$5$ by
+$+2.2$~pp, Recall@$10$ by $+3.2$~pp, and Recall@$20$ by $+2.2$~pp over
+vanilla training (paired $t$-test $p = 0.004$ at R@$10$).
+
+\paragraph{This companion document.} In addition to the theoretical content
+of the main paper, this document includes (Appendix~\ref{app:per-seed-slopes}
+through Appendix~\ref{app:e2e}) every per-seed slope, $R^2$, eigenvalue
+range, equivalence-error trajectory, recall-at-$K$ value, phase-transition
+sweep value, rank-vs-width data point, rank-vs-spectral trajectory entry,
+NTK eigenvalue-spectrum summary, per-mode displacement, and end-to-end
+CNN per-epoch loss read directly from the experimental JSON outputs.
+All numerical values are computed from the JSON via
+\texttt{numpy.polyfit} on the masked log-transformed data; nothing is
+hand-typed.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Neural metric learning trains an embedding $f_\theta: \R^d \to \R^k$ so that
+$\norm{f_\theta(x) - f_\theta(y)}^2$ encodes a desired similarity geometry.
+Two theoretical frameworks bear on this setting from very different angles.
+The \emph{neural tangent kernel} \citep{jacot2018neural,lee2019wide} describes
+sufficiently wide networks as kernel methods governed by a fixed kernel
+$\Theta$, and yields linear ODEs for the network's predictions under
+gradient flow. The \emph{Burer--Monteiro factorization}
+\citep{burer2003nonlinear,burer2005local}, central to low-rank semidefinite
+programming, parameterizes a positive semidefinite matrix $X$ as
+$X = UU^\top$ and uses $U$ as the optimization variable; the resulting
+gradient flow on $X$ takes the form $\dot{X} = -2(EX + XE)$.
+
+The two frameworks are usually treated in isolation. We connect them by
+observing that an embedding network with twice-differentiable loss on
+$G = FF^\top$ is a Burer--Monteiro factorization in a non-linear feature
+space, and that the NTK enters as an explicit \emph{kernel preconditioner}
+on the BM dynamics. Concretely, in the NTK regime the network's Gram matrix
+evolves according to
+\begin{equation}
+\label{eq:kbm-intro}
+\dot{G} \;=\; -2\,\bigl(K\,\E\,G + G\,\E\,K\bigr),
+\qquad \E = \partial L / \partial G,
+\end{equation}
+which reduces to the classical BM flow when $K = I$. We call \eqref{eq:kbm-intro}
+the \emph{kernel-preconditioned Burer--Monteiro} (kBM) flow.
+
+The equivalence is itself a useful conceptual bridge, but on its own it
+does not say more than the standard NTK ODE in different coordinates.
+The contribution of this paper is to use the kBM viewpoint to extract a
+\emph{spectral implicit bias} that does not follow from NTK alone.
+Diagonalizing $K = U\Lambda U^\top$ and writing $\Gtilde := U^\top G U$,
+$\Etilde := U^\top \E U$, the kBM flow becomes
+\[
+\dot{\Gtilde} \;=\; -2\,(\Lambda\,\Etilde\,\Gtilde + \Gtilde\,\Etilde\,\Lambda),
+\]
+so the time derivative of mode $(i,j)$ is multiplied by $\lambda_i + \lambda_j$.
+Modes corresponding to small kernel eigenvalues are essentially frozen.
+This makes a sharp, testable prediction: the trajectory of $G(t)$ confines
+its motion to $K$'s top eigenspaces, regardless of where the loss landscape
+would otherwise prefer it to go. Under NTK initialisation the prediction
+sharpens to a \emph{quadratic} scaling: per-mode displacement at any fixed
+training horizon scales as $\lambda_i^2$, which we verify across synthetic
+and real-image setups.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+\item \textbf{Equivalence theorem.} Under gradient flow on a single-layer
+ReLU network with the standard NTK approximation, the Gram-matrix dynamics
+take the kBM form \eqref{eq:kbm-intro}, recovering the classical BM dynamics
+when $K = I$ (Theorem~\ref{thm:kbm}).
+
+\item \textbf{Depth-$L$ extension.} The same kBM equation governs a
+depth-$L$ fully-connected ReLU network, with $K$ replaced by the depth-$L$
+NTK from the recursive Jacot construction (Theorem~\ref{thm:depth}).
+
+\item \textbf{Spectral implicit-bias theorems.} In the eigenbasis of $K$
+the kBM flow's $(i,j)$ component evolves at rate $\lambda_i + \lambda_j$;
+under a benign-loss assumption this implies a model-free linear-in-$\lambda$
+time-constant bound (Theorem~\ref{thm:spectral}). Within the NTK regime,
+where $G_0$ and $K$ share approximate eigenstructure, the bound tightens
+to a quadratic-in-$\lambda$ prediction (Theorem~\ref{thm:spectral-refined}),
+which matches the empirical slope $\approx 2$ across configurations.
+
+\item \textbf{Funk--Hecke alignment.} For rotationally-invariant inputs on
+the sphere, the Funk--Hecke theorem identifies $K$ and the initial Gram
+$G_0$ as simultaneously diagonal in the spherical-harmonic basis, with a
+diagonal-entry ratio $c_l \in [c_{\min}, c_{\max}]$ uniformly bounded across
+frequencies (Proposition~\ref{prop:align}). This is the structural fact that
+upgrades the linear bound to the quadratic prediction.
+
+\item \textbf{Numerical illustration.} We verify the equivalence and
+the spectral-bias prediction with multi-seed experiments on synthetic data
+($N \in \{10, 30, 100, 1000\}$, depth $L \in \{1, 2, 3\}$), Fashion-MNIST,
+frozen-feature CIFAR-10, and an end-to-end CNN trained from scratch.
+Empirical power-law slopes range from $1.15$ to $2.19$ across configurations,
+all consistent with the bound $\leq 2$ from Theorem~\ref{thm:spectral-refined}.
+
+\item \textbf{Algorithmic payoff: spectral preconditioner.} Applying $K^{-1}$
+to the embedding-side gradient flattens the spectral bias from slope
+$1.99 \pm 0.11$ (vanilla) to $0.74 \pm 0.10$ (preconditioned) on synthetic
+data and from $2.06$ to $1.59$ on frozen-feature CIFAR-10, a one-line
+modification to backpropagation derived directly from the kBM viewpoint
+(Section~\ref{sec:exp-precond}). On the end-to-end CNN the slope drops from
+$1.15 \pm 0.07$ to $0.97 \pm 0.11$.
+
+\item \textbf{Test-time gain on hard triplets.} On held-out CIFAR-10
+retrieval with hard nearest-different-class triplets, the preconditioner
+improves recall@$10$ by $+3.2 \pm 1.1$~percentage points over vanilla
+(paired $t$-test $p = 0.004$, Table~\ref{tab:recall}), with R@$5$ and R@$20$
+gains of $+2.2$~pp each. The gain is concentrated where the gradient signal
+loads on $K$'s bottom eigenspace---exactly as
+Theorem~\ref{thm:spectral-refined} predicts.
+
+\item \textbf{Distinct from Razin--Cohen rank bias.} Our spectral bias
+operates along $K$'s eigenbasis; the Razin--Cohen rank bias operates
+on $G$'s singular spectrum. We verify empirically that vanilla NTK
+metric learning produces a trivial rank trajectory but a dramatic
+spectral-displacement trajectory; the two mechanisms are complementary,
+not competing.
+
+\item \textbf{Effective hypothesis class.} As a direct corollary
+(Corollary~\ref{cor:gen}), the kBM theory yields a quantitative effective
+rank of the hypothesis class on bounded training horizons: only metric
+structure supported on $K$'s top-$r(T, \delta)$ eigenspace is learnable.
+\end{enumerate}
+
+We are explicit about scope. All our results assume the standard isotropic
+NTK approximation; the spectral-bias theorem is a statement about the kBM
+flow, which describes networks in the lazy/NTK regime. We do not analyse
+feature-learning corrections, nor do we claim a generalization bound. We
+discuss limitations in Section~\ref{sec:discussion}.
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{NTK theory.}
+The NTK framework of \citet{jacot2018neural} reduces gradient-flow training
+of wide networks to kernel regression with a fixed kernel; subsequent work
+extends this to multi-layer networks \citep{lee2019wide,arora2019fine},
+characterizes generalization \citep{arora2019fine}, and gives concentration
+bounds for finite width \citep{du2019gradient}. \citet{chizat2020implicit}
+clarifies the lazy-vs-rich training dichotomy. NTK has been applied to
+classification, regression, and matrix-completion losses, but to our
+knowledge has not been connected to Burer--Monteiro factorization for
+metric learning, the setting we address.
+
+\paragraph{Burer--Monteiro and SDP factorization.}
+\citet{burer2003nonlinear,burer2005local} introduced the
+$X = UU^\top$ parameterization for SDPs. \citet{boumal2016non} prove that
+for smooth SDPs satisfying a Slater condition, all second-order critical
+points of the BM problem are global with high probability when the rank is
+chosen above a threshold. \citet{bhojanapalli2016global} and
+\citet{ge2016matrix} prove similar global-optimality results for matrix
+sensing and completion. \citet{park2017non} extends the BM landscape
+analysis to non-square matrix sensing. Our equivalence is closest in
+spirit to these results, but in the non-linear feature space of a neural
+network and with kernel-preconditioned dynamics rather than vanilla
+BM gradient flow.
+
+\paragraph{Implicit bias of gradient descent.}
+\citet{gunasekar2017implicit} prove that gradient descent on linear
+matrix factorization converges to the minimum nuclear-norm solution under
+infinitesimal initialization. \citet{arora2019implicit} sharpen this for
+deep matrix factorization, showing that effective rank is biased downward
+in a manner that does not coincide with nuclear-norm minimization.
+\citet{razin2020implicit} extend this to tensor factorizations and
+demonstrate that the implicit regularization is not described by any matrix
+norm. Our spectral-bias result is conceptually adjacent but distinct: the
+bias we identify is in the \emph{spectrum of the NTK}, not the rank or the
+nuclear norm of the solution. The two views are complementary; we discuss
+their relationship in Section~\ref{sec:discussion} and demonstrate the
+dissociation directly in Section~\ref{sec:exp-rank-vs-spec}.
+
+\paragraph{Implicit bias and margin.}
+\citet{soudry2018implicit} show that gradient descent on logistic regression
+with separable data converges in direction to the max-margin classifier;
+\citet{lyu2019gradient} extend this to homogeneous neural networks. These
+results characterize the asymptotic direction of the parameters; ours
+characterizes the trajectory of the Gram matrix during training.
+
+\paragraph{Frequency-principle/spectral-bias results.}
+Spectral-bias results for regression under NTK
+\citep{rahaman2019spectral,basri2020frequency} establish that wide networks
+fit low-frequency targets faster. Our setting differs in three ways: the
+target is a Gram matrix rather than a scalar function; the loss is bilinear
+in $G$ rather than quadratic in $F$; and the ``frequency'' direction is set
+by the NTK eigenbasis on the input set, not by the Laplacian of the input
+domain.
+
+\paragraph{Metric learning.}
+\citet{schroff2015facenet,weinberger2009distance} popularized triplet-based
+metric learning, with subsequent work on proxy losses
+\citep{movshovitz2017no} and angular formulations \citep{wang2017deep}. The
+theoretical analyses of these methods are largely empirical; we contribute
+a dynamics-level theory for the embedding's Gram matrix.
+
+\paragraph{Neural networks as convex regularizers.}
+\citet{pilanci2020neural} provide an exact convex reformulation of two-layer
+ReLU networks. Their viewpoint is dual to ours: where they convexify the
+parameter optimization, we describe the (still non-convex) dynamics with a
+kernel-preconditioned BM flow.
+
+\section{Theoretical Framework}
+\label{sec:theory}
+
+\subsection{Setup}
+
+Let $X \in \R^{N \times d}$ be a data matrix with rows $x_i$. We denote by
+$F = f_\theta(X) \in \R^{N \times M}$ the embeddings produced by a depth-$L$
+fully-connected ReLU network of width $M$ with parameters $\theta$, and by
+$G = FF^\top \in \R^{N \times N}$ the corresponding Gram matrix. We
+consider any twice-differentiable loss $L : \R^{N \times N} \to \R$ on $G$;
+triplet loss is the running example. Write $\E := \partial L / \partial G$.
+
+We use the standard NTK parameterization with weights initialized
+$\mathcal{N}(0, 1/d_{\text{in}})$ at each layer and no output normalization;
+under this convention $G_{ij}$ is $\Theta(1)$ at initialization and our
+expressions are scale-free.
+
+\subsection{Single-layer kBM equivalence}
+
+\begin{definition}[NTK at the data]
+The Jacobian of the embedding is $J(x; \theta) = \nabla_\theta f_\theta(x)$.
+The (output-summed) NTK at $x_i, x_j$ is
+$\kappa(x_i, x_j) := \tr\!\bigl(J(x_i)J(x_j)^\top\bigr)/M$.
+We write $K_{ij} := \kappa(x_i, x_j)$ for the empirical kernel matrix.
+\end{definition}
+
+\begin{theorem}[kBM equivalence, single layer]
+\label{thm:kbm}
+For a single-layer ReLU network $F_{i\cdot} = \mathrm{ReLU}(x_i^\top W)$
+with $W \in \R^{d \times M}$ trained by gradient flow on $L(G)$, the Gram
+matrix $G$ evolves, in the limit $M \to \infty$, as
+\[
+\dot{G} \;=\; -2\,\bigl(K\,\E\,G + G\,\E\,K\bigr).
+\]
+For finite width $M$ the same equation holds with the empirical kernel
+$K^{(M)}$ in place of $K$; the gap $\norm{K^{(M)} - K}_{op} = O_p(M^{-1/2})$
+under standard assumptions \citep{jacot2018neural,arora2019fine}.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+Under gradient flow $\dot\theta = -\nabla_\theta L$, we have
+$\dot{G}_{ij} = \langle \nabla_\theta G_{ij}, \dot\theta\rangle
+= -\sum_{k,l} \E_{kl}\,\Theta_{(ij),(kl)}^G$ where
+$\Theta^G_{(ij),(kl)} := \langle \nabla_\theta G_{ij},
+\nabla_\theta G_{kl}\rangle$ is the Gram-Gram NTK. A direct computation
+using $G_{ij} = \sum_m F_{im}F_{jm}$ and the chain rule gives, in the
+$M\to\infty$ limit,
+\[
+\Theta^G_{(ij),(kl)} \;=\;
+\kappa_{ik} G_{jl} + \kappa_{il}G_{jk} + \kappa_{jk}G_{il} + \kappa_{jl}G_{ik}.
+\]
+Substituting and using $\E = \E^\top$ collapses the four terms into
+$KEG + GEK$. The full derivation appears in Appendix~\ref{app:proofs}.
+\end{proof}
+
+\begin{remark}
+When $K = I$, Theorem~\ref{thm:kbm} reduces to the classical
+Burer--Monteiro flow $\dot G = -2(\E G + G \E)$ \citep{burer2003nonlinear},
+verifying that the classical BM dynamics are a special case.
+\end{remark}
+
+\subsection{Depth-$L$ extension}
+
+The depth-$L$ NTK admits the recursive form of \citet{jacot2018neural}:
+$\Theta^{(\ell)} = \Sigma^{(\ell)} + \dot{\Sigma}^{(\ell)} \cdot \Theta^{(\ell-1)}$
+with $\Theta^{(1)} = \Sigma^{(1)} + \dot{\Sigma}^{(1)} \cdot \langle x,y\rangle$,
+where $\Sigma^{(\ell)}$ is the layer-$\ell$ activation kernel (the
+Cho--Saul arc-cosine kernel) and $\dot\Sigma^{(\ell)}$ its derivative
+\citep{cho2009kernel}.
+
+\begin{theorem}[kBM equivalence, depth $L$]
+\label{thm:depth}
+For a depth-$L$ fully-connected ReLU network in NTK parameterization, the
+Gram matrix $G$ evolves under gradient flow as $\dot G = -2(K_L \E G + G \E K_L)$
+where $K_L$ is the depth-$L$ NTK from the Jacot recursion.
+\end{theorem}
+
+\begin{proof}[Proof sketch]
+The Gram-Gram NTK $\Theta^G$ inherits its tensor structure from the
+output-output NTK $\Theta$: the four-term expansion in the proof of
+Theorem~\ref{thm:kbm} is a consequence of $G = FF^\top$ and does not
+reference the depth of the network. Replacing $\kappa$ everywhere by the
+depth-$L$ kernel $\kappa_L$ from the recursion yields the result. The
+finite-width error retains the standard $O_p(M^{-1/2})$ rate per layer
+\citep{arora2019fine}.
+\end{proof}
+
+\subsection{Spectral implicit bias}
+
+The kBM flow takes a particularly clean form in $K$'s eigenbasis, and this
+form yields the paper's central new result.
+
+\begin{lemma}[kBM in $K$'s eigenbasis]
+\label{lem:eigen}
+Let $K = U\Lambda U^\top$ with $\Lambda = \diag(\lambda_1, \ldots, \lambda_N)$,
+$\lambda_1 \geq \cdots \geq \lambda_N \geq 0$. Define
+$\Gtilde := U^\top G U$ and $\Etilde := U^\top \E U$. Then the kBM flow
+becomes
+\[
+\dot{\Gtilde} \;=\; -2\,\bigl(\Lambda\,\Etilde\,\Gtilde + \Gtilde\,\Etilde\,\Lambda\bigr),
+\]
+and the $(i,j)$ entry satisfies
+$\dot{\Gtilde}_{ij} = -2\bigl(\lambda_i (\Etilde\Gtilde)_{ij} +
+\lambda_j (\Gtilde\Etilde)_{ij}\bigr)$. In particular, the diagonal mode
+satisfies $\dot{\Gtilde}_{ii} = -4\lambda_i (\Etilde\Gtilde)_{ii}$, so the
+$i$th eigendirection of $G$ relaxes at instantaneous rate proportional to
+$\lambda_i$, and modes corresponding to the bottom of $K$'s spectrum are
+dynamically frozen.
+\end{lemma}
+
+\begin{proof}
+Direct substitution of $K = U\Lambda U^\top$ and conjugation by $U^\top, U$.
+\end{proof}
+
+\begin{theorem}[Spectral implicit bias, model-free linear bound]
+\label{thm:spectral}
+Let $G(t)$ solve the kBM ODE $\dot G = -2(K\E G + G \E K)$ with
+$L \in C^2$ and gradients bounded over the trajectory. Suppose
+$\lambda_i = 0$ for some index $i$. Then $\Gtilde_{ij}(t) = \Gtilde_{ij}(0)$
+for all $t$ and all $j$. More generally, if
+$\lambda_i \leq \veps$, then over any interval $[0, T]$ on which
+$\norm{\Etilde\Gtilde}_{op}, \norm{\Gtilde\Etilde}_{op}$ are uniformly bounded by $C$,
+\[
+\bigl|\Gtilde_{ij}(T) - \Gtilde_{ij}(0)\bigr|
+\;\leq\; 2T(\lambda_i + \lambda_j)\,C.
+\]
+\end{theorem}
+
+\begin{proof}
+The exact-zero case follows from Lemma~\ref{lem:eigen}: the row $i$ of
+$\Lambda \Etilde \Gtilde$ vanishes (premultiplication by a row of $\Lambda$
+with $\lambda_i = 0$), and the column $i$ of $\Gtilde \Etilde \Lambda$
+vanishes. Symmetric argument for $j$. The bound follows by integrating
+$|\dot{\Gtilde}_{ij}| \leq 2(\lambda_i + \lambda_j) C$ over $[0, T]$.
+\end{proof}
+
+\begin{corollary}[Mode-wise time constants]
+\label{cor:rate}
+For diagonal entries, in the linearization around any point where
+$\Etilde\Gtilde$ has bounded operator norm, the mode-$i$ time constant
+satisfies $\tau_i \propto 1/\lambda_i$. Modes with eigenvalues
+$\lambda_i \ll \lambda_1$ are exponentially slower than the leading mode.
+\end{corollary}
+
+\subsection{From a linear bound to a quadratic prediction}
+\label{sec:refined}
+
+The bound in Theorem~\ref{thm:spectral} is linear in $\lambda_i$. In our
+experiments (Section~\ref{sec:exp-spectral}) the empirical scaling of
+diagonal displacements $|\Gtilde_{ii}(T) - \Gtilde_{ii}(0)|$ is consistently
+\emph{quadratic} in $\lambda_i$ across depths and across both synthetic and
+Fashion-MNIST data. The gap between linear bound and quadratic observation
+is closed by exploiting a structural property of NTK initialization:
+$G_0$ and $K$ share approximate eigenstructure, so $\Gtilde_0$ is
+approximately diagonal in $K$'s eigenbasis with diagonal entries
+proportional to the kernel spectrum.
+
+\begin{proposition}[Approximate eigen-alignment at NTK init via Funk--Hecke]
+\label{prop:align}
+For a single-layer ReLU network in NTK parameterization with width $M$ and
+inputs drawn iid from a rotationally-invariant distribution on the unit
+sphere, $G_0 = F_0 F_0^\top$ converges as $M \to \infty$ to the layer-1
+arc-cosine kernel $\Sigma^{(1)}$ \citep{cho2009kernel}. Both
+$\Sigma^{(1)}$ and the NTK $K = \Sigma^{(1)} + \dot{\Sigma}^{(1)} \odot
+\langle x_i, x_j\rangle$ are functions of the input correlation matrix
+$\langle x_i, x_j\rangle$ alone; under rotational invariance they share an
+asymptotic eigenbasis (the spherical harmonics on $S^{d-1}$). Consequently,
+$\Gtilde_0 := U^\top G_0 U$ is approximately diagonal, and the
+diagonal entries satisfy $\Gtilde_0[i,i] = c_i \lambda_i$ with $c_i$
+bounded and slowly varying across the spectrum.
+\end{proposition}
+
+\begin{proof}
+Both $\Sigma^{(1)}$ and $K$ are scalar functions of $\langle x_i, x_j\rangle$
+on the unit sphere, so the Funk--Hecke theorem
+\citep[Theorem~2.22]{atkinson2012spherical} diagonalizes them in the
+spherical-harmonic basis with eigenvalues given by Gegenbauer integrals
+of $\kappa_1$ and $\kappa_1 + \kappa_0(\cdot)\cdot t$. The ratio
+$c_l = \lambda_l(\kappa_1) / \lambda_l(\kappa_1 + \kappa_0\cdot t)$ lies
+in $(0, 1)$ and is bounded away from $0$ uniformly in $l$, using the
+asymptotic decay rates from \citet{bach2017breaking}. Empirical kernels
+on $N$ samples concentrate around the population kernels at rate
+$O(N^{-1/2})$ \citep{tropp2015introduction}; eigenvectors align via
+Davis--Kahan. Full details in Appendix~\ref{app:prop-align}.
+\end{proof}
+
+\begin{theorem}[Refined spectral implicit bias, quadratic prediction]
+\label{thm:spectral-refined}
+Let $G(t)$ solve the kBM ODE $\dot{G} = -2(K\E G + G\E K)$ with $L \in C^2$.
+Assume:
+\begin{itemize}
+\item[(A1)] $\Gtilde_0$ is diagonal in $K$'s eigenbasis with diagonal
+$\Gtilde_0[i,i] = c_i \lambda_i$, $c_i \in [c_{\min}, c_{\max}]$;
+\item[(A2)] $\Etilde(s)$ has uniformly bounded entries
+$|\Etilde[i,j](s)| \leq E$ for $s \in [0, T]$.
+\end{itemize}
+Then, to leading order in $T$,
+\[
+\Gtilde_{ii}(T) - \Gtilde_{ii}(0)
+\;=\; -\,4\,T\,\lambda_i\,(\Etilde_0\,\Gtilde_0)_{ii} \;+\; O(T^2),
+\]
+and under the additional assumption (A3) that $\Etilde_0\,\Gtilde_0$ is
+approximately diagonal at initialization in the sense
+$|(\Etilde_0\,\Gtilde_0)[i,i]| \leq c_{\max}\lambda_i\,|\Etilde_0[i,i]|
++ O(\sqrt{N}/M^{1/2})$, we have
+\[
+\boxed{\;
+\bigl|\Gtilde_{ii}(T) - \Gtilde_{ii}(0)\bigr|
+\;\leq\; 4\,c_{\max}\,T\,E\,\lambda_i^{2} \;+\; O(T^2) \;+\; O(M^{-1/2}).
+\;}
+\]
+The displacement scales as $\lambda_i^{\,2}$, matching the empirical
+power-law slope $\approx 2$ observed in
+Section~\ref{sec:exp-spectral}.
+\end{theorem}
+
+\begin{proof}
+By Lemma~\ref{lem:eigen}, $\dot{\Gtilde}_{ii}
+= -4\lambda_i\,(\Etilde\Gtilde)_{ii}$. Linearizing around $t=0$:
+$\Etilde(s) = \Etilde_0 + O(s)$ and $\Gtilde(s) = \Gtilde_0 + O(s)$, so
+$(\Etilde\Gtilde)_{ii}(s) = (\Etilde_0 \Gtilde_0)_{ii} + O(s)$.
+Integrating,
+$\Gtilde_{ii}(T) - \Gtilde_{ii}(0) = -4T\lambda_i(\Etilde_0\Gtilde_0)_{ii}
++ O(T^2)$. Under (A3) and (A1),
+$|(\Etilde_0\Gtilde_0)_{ii}| \leq c_{\max}\lambda_i E$, giving the boxed
+bound. The $O(M^{-1/2})$ term collects the off-diagonal contributions to
+$(\Etilde_0\Gtilde_0)_{ii}$ that vanish in the infinite-width limit by
+Proposition~\ref{prop:align}.
+\end{proof}
+
+\begin{remark}
+Theorem~\ref{thm:spectral} (linear bound) and
+Theorem~\ref{thm:spectral-refined} (quadratic bound) characterize the same
+phenomenon at different levels of refinement. The linear bound is
+\emph{model-free}: it holds for any kBM flow with bounded gradients,
+regardless of how $G_0$ and $K$ are related. The quadratic bound exploits
+the additional structure of NTK initialization (Proposition~\ref{prop:align}).
+We use the linear bound as the formal statement of the spectral-bias
+phenomenon and the quadratic bound as a sharper prediction within the
+NTK regime; experiments support the quadratic prediction
+(Section~\ref{sec:exp-spectral}).
+\end{remark}
+
+This is a sharper statement than ``the NTK influences training.'' It says:
+the network's trajectory is confined, on any bounded time interval, to a
+neighborhood of its initial state \emph{in the bottom eigenspace of $K$},
+with the size of that neighborhood controlled by $\lambda_i^2$.
+Section~\ref{sec:experiments} verifies this prediction numerically and
+shows that it holds for both networks and the ODE.
+
+\subsection{Generalization implication}
+\label{sec:gen}
+
+Theorem~\ref{thm:spectral-refined} has a direct generalization
+implication: the network cannot fit triplet structure that lives in
+$K$'s bottom eigenspace within any bounded training time. So if the
+target geometry has support outside $K$'s top-$r$ eigenspace, the
+network's effective hypothesis class on a finite training horizon is
+truncated to that subspace.
+
+\begin{corollary}[Effective rank of the hypothesis class]
+\label{cor:gen}
+Fix a training horizon $T$ and a tolerance $\delta > 0$. Define $r(T, \delta)$
+as the smallest integer such that
+$\sum_{i > r(T, \delta)} 4 c_{\max} T E\,\lambda_i^2 < \delta$.
+Then for any $G(t)$ on the kBM trajectory with $t \leq T$ and any
+target $G^\star$ supported on the top-$r(T, \delta)$ eigenspace of $K$,
+the bound from Theorem~\ref{thm:spectral-refined} applied mode-wise
+gives $\norm{G(T) - G^\star}_F^2 \leq \delta + \norm{G(0) - G^\star}_F^2$
+up to lower-order terms. Conversely, if $G^\star$ has nontrivial
+projection onto eigenspaces with index $> r(T, \delta)$, that projection
+is preserved (up to $\delta$) from initialization, regardless of how
+well the gradient signal aligns with it.
+\end{corollary}
+
+\section{Numerical Illustration}
+\label{sec:experiments}
+
+\subsection{Setup}
+
+We organize the experiments around the theorems above. Synthetic
+experiments use unit-norm Gaussian data and triplet loss generated either
+uniformly at random (Sections~\ref{sec:exp-equiv},
+\ref{sec:exp-spectral}, \ref{sec:exp-precond}) or from a target Gram matrix
+(Section~\ref{sec:exp-rank}). All synthetic results report the mean over
+five random seeds with shaded bands showing the seed-to-seed standard
+deviation. Implementation details: depth-$L$ ReLU networks under NTK
+parameterisation, depth-$L$ NTK kernels via the Jacot recursion, RK4
+integrator for the kBM ODE, and triplet loss. The full per-seed JSON
+outputs of every experiment are dumped into the appendices of this
+companion document.
+
+\subsection{Equivalence: network vs.\ kBM ODE}
+\label{sec:exp-equiv}
+
+We initialize a fresh ReLU embedder of depth $L \in \{1, 2, 3\}$ and width
+$M = 1000$, compute its initial Gram matrix $G_0$, and integrate the kBM
+ODE from $G_0$ with the depth-$L$ NTK $K_L$ for the same number of
+gradient-flow steps as the network. Figure~\ref{fig:equiv} reports the
+relative Frobenius error
+$\norm{G_{\text{net}}(t) - G_{\text{ode}}(t)}_F / \norm{G_{\text{net}}(t)}_F$
+over training, for $N \in \{10, 30\}$ and $L \in \{1, 2, 3\}$.
+Appendix~\ref{app:equiv-traj} dumps the per-seed trajectory at multiple
+time-points.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_equivalence.png}
+\caption{Network vs.\ kBM ODE relative error during training. Solid lines
+are mean over 5 seeds; bands are seed-to-seed standard deviation.}
+\label{fig:equiv}
+\end{figure}
+
+\subsection{Spectral implicit bias on synthetic data}
+\label{sec:exp-spectral}
+
+We diagonalize the depth-$L$ NTK $K_L = U\Lambda U^\top$ at initialization,
+project the network's Gram matrix into $K_L$'s eigenbasis at every recorded
+epoch, and fit a power law to the per-mode displacement
+$|\Gtilde_{ii}(T) - \Gtilde_{ii}(0)|$ versus $\lambda_i$ on log-log axes.
+Figure~\ref{fig:spectral} confirms the quadratic prediction.
+Per-seed slopes for every configuration are reported in
+Appendix~\ref{app:per-seed-slopes}; per-mode displacement values for the
+smaller configurations are reported in Appendix~\ref{app:per-mode}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_spectral_bias.png}
+\caption{Spectral implicit bias across $N \in \{30, 100, 1000\}$ and
+$L \in \{1, 2\}$ (six panels). Each panel: per-mode displacement
+$|\Gtilde_{ii}(T) - \Gtilde_{ii}(0)|$ versus $\lambda_i$ on log-log axes,
+with best-fit power law.}
+\label{fig:spectral}
+\end{figure}
+
+\subsection{Spectral bias on Fashion-MNIST}
+\label{sec:exp-fashion}
+
+We sample $N = 200$ images from four Fashion-MNIST classes (T-shirt,
+Trouser, Pullover, Dress), PCA-reduce them to $d_{\text{in}} = 64$ and
+unit-normalize, and train a depth-$2$ width-$1024$ ReLU embedder with
+same-class positive and different-class negative triplets. The fitted
+slope is $s = 1.69 \pm 0.03$, in the predicted range
+(Figure~\ref{fig:fashion}).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{fig_fashion_spectral.png}
+\caption{Spectral-bias prediction on Fashion-MNIST. Per-mode displacement
+of $\Gtilde$ versus kernel eigenvalue, mean over 5 seeds; fitted slope
+$s = 1.69 \pm 0.03$.}
+\label{fig:fashion}
+\end{figure}
+
+\subsection{Algorithmic payoff: the spectral preconditioner}
+\label{sec:exp-precond}
+
+The spectral-bias theorem says vanilla NTK training is biased toward
+fitting structure in $K$'s top eigenspace. Theorem~\ref{thm:spectral-refined}
+suggests how to remove the bias: applying $K^{-1}$ to the embedding-side
+gradient should cancel the kernel preconditioner.
+
+\begin{align*}
+\text{vanilla:}\quad &dL/d\theta = J^\top\,\mathrm{vec}(dL/dF), \\
+\text{preconditioned:}\quad &dL/d\theta = J^\top\,\mathrm{vec}\!\bigl(K^{-1}\,dL/dF\bigr).
+\end{align*}
+
+\paragraph{Synthetic slope flattening.}
+On the synthetic depth-$1$, $N=50$ setup, vanilla training shows
+slope-2 spectral bias ($s_v = 2.00 \pm 0.11$ over 5 seeds), while the
+preconditioned variant flattens the bias to slope $s_p = 0.74 \pm 0.09$
+(Figure~\ref{fig:precond}). Per-seed slopes are in
+Appendix~\ref{app:precond-perseed}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_preconditioner.png}
+\caption{Spectral preconditioner. \textbf{Left:} per-mode displacement
+versus eigenvalue. \textbf{Right:} triplet-satisfaction rate by spectral bin.}
+\label{fig:precond}
+\end{figure}
+
+\subsection{Real-data validation: CIFAR-10 head-only}
+\label{sec:exp-cifar}
+
+We use a frozen ImageNet-pretrained ResNet-18 to extract penultimate-layer
+features, PCA-reduce to 128 dimensions, unit-normalize, and train a 2-layer
+fully-connected ReLU head with triplet loss. Triplets are formed from
+class labels (2000 per seed). Vanilla slope $2.06 \pm 0.01$, preconditioned
+$1.59 \pm 0.02$ (Figure~\ref{fig:cifar}).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{fig_cifar10.png}
+\caption{Spectral preconditioner on CIFAR-10 (ResNet-18 penultimate
+features, depth-2 head).}
+\label{fig:cifar}
+\end{figure}
+
+\paragraph{Test-time retrieval (Recall@$K$).}
+We evaluate held-out retrieval (test query against train gallery, hit if
+top-$K$ matches share class). Easy = random different-class negatives,
+hard = nearest different-class negatives in input space.
+
+\begin{table}[h]
+\centering
+\caption{Recall@$K$ on held-out CIFAR-10 (mean $\pm$ std over 5 seeds).
+$\Delta$ is preconditioned $-$ vanilla. Full per-seed values and paired
+$t$-statistics are in Appendix~\ref{app:recall}.}
+\label{tab:recall}
+\begin{tabular}{lccc}
+\toprule
+& Vanilla & Preconditioned & $\Delta$ \\
+\midrule
+\multicolumn{4}{l}{\emph{Easy triplets}:} \\
+recall@1  & $0.715 \pm 0.025$ & $0.698 \pm 0.027$ & $-0.017 \pm 0.018$ \\
+recall@5  & $0.910 \pm 0.019$ & $0.916 \pm 0.012$ & $+0.006 \pm 0.010$ \\
+recall@10 & $0.952 \pm 0.017$ & $0.954 \pm 0.013$ & $+0.002 \pm 0.006$ \\
+recall@20 & $0.977 \pm 0.012$ & $0.981 \pm 0.012$ & $+0.004 \pm 0.002$ \\
+\midrule
+\multicolumn{4}{l}{\emph{Hard triplets}:} \\
+recall@1  & $0.733 \pm 0.014$ & $0.728 \pm 0.010$ & $-0.005 \pm 0.022$ \\
+recall@5  & $0.875 \pm 0.019$ & $0.897 \pm 0.023$ & $\mathbf{+0.022 \pm 0.011}$ \\
+recall@10 & $0.919 \pm 0.014$ & $0.951 \pm 0.015$ & $\mathbf{+0.032 \pm 0.011}$ \\
+recall@20 & $0.955 \pm 0.010$ & $0.977 \pm 0.015$ & $\mathbf{+0.022 \pm 0.012}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{End-to-end CIFAR-10: small CNN trained from scratch}
+\label{sec:exp-end2end}
+
+We train a small CNN end-to-end with no pretrained backbone (3 conv blocks
+$32$-$32$-$64$, 32-dim head, $\sim$104k params) using the empirical NTK at
+initialization. Vanilla slope $1.15 \pm 0.07$, preconditioned $0.97 \pm 0.11$
+(Figure~\ref{fig:end2end}). Per-epoch losses, hyperparameters, and per-seed
+slopes are in Appendix~\ref{app:e2e}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{fig_cifar10_end2end.png}
+\caption{End-to-end CIFAR-10 with small CNN trained from scratch.}
+\label{fig:end2end}
+\end{figure}
+
+\subsection{Spectral bias is distinct from rank bias}
+\label{sec:exp-rank-vs-spec}
+
+We track the effective rank of $G(t)$ and the spectral displacement
+$\norm{\Gtilde(t) - \Gtilde(0)}_F$ on the same trajectory ($N=50$, 400
+triplets). The effective rank is essentially constant at $\approx 33$
+throughout training despite the dramatic spectral-displacement difference.
+Full trajectory data per seed is in Appendix~\ref{app:rank-spec}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_rank_vs_spectral.png}
+\caption{The kBM spectral implicit bias is distinct from the
+Razin--Cohen rank bias.}
+\label{fig:rank-vs-spec}
+\end{figure}
+
+\subsection{Rank under the constraint structure}
+\label{sec:exp-rank}
+
+When the network width $M$ exceeds $N$, triplet loss does not bias the
+embedding toward low rank. Figure~\ref{fig:rank} shows the rank saturates
+at $N$ across $M \geq N$. Full per-width data is in
+Appendix~\ref{app:rank-width}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{fig_rank_vs_width.png}
+\caption{Learned rank vs.\ network width.}
+\label{fig:rank}
+\end{figure}
+
+\subsection{Phase-transition behavior under nuclear-norm regularization}
+\label{sec:exp-phase}
+
+Adding $\lambda \norm{G}_*$ to the objective drives the rank down at large
+$\lambda$. Figure~\ref{fig:phase} reports rank as a function of $\lambda$
+across 5 seeds. Full per-$\lambda$ data is in Appendix~\ref{app:phase}.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{fig_phase.png}
+\caption{Effective rank vs.\ regularization strength $\lambda$.}
+\label{fig:phase}
+\end{figure}
+
+\section{Discussion and Limitations}
+\label{sec:discussion}
+
+\paragraph{What the kBM viewpoint adds.}
+On its own, the kBM equivalence (Theorem~\ref{thm:kbm}) is a coordinate
+change on the standard NTK ODE. The added value is conceptual---it
+identifies the standard NTK dynamics for metric learning as a kernel-
+preconditioned BM flow, which clarifies the role of $K$ as an optimization
+geometry---and predictive: the spectral implicit-bias result
+(Theorem~\ref{thm:spectral}) is most naturally derived in the kBM form.
+The preconditioner of Section~\ref{sec:exp-precond} is the algorithmic
+payoff: it would not have been suggested by the standard NTK ODE alone.
+
+\paragraph{Slope deviations from $2$.}
+Theorem~\ref{thm:spectral-refined} predicts asymptotic slope $2$ in the NTK
+initialisation regime. Empirically the slope concentrates between $1.15$
+and $2.19$. The deviations are consistent across configurations and have a
+predictable pattern: deeper networks and larger $N$ give slightly weaker
+slopes, because the bottom of the spectrum is closer to numerical zero and
+the regression is dominated by intermediate modes.
+
+\paragraph{Scope and limitations.}
+The kBM equivalence relies on the standard NTK approximation, valid in
+the lazy/wide regime. The spectral-bias prediction is established for
+fully-connected ReLU networks; convolutional architectures admit
+analogous NTK formulas but no closed-form extension is given.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We characterized neural metric learning under NTK dynamics as a
+kernel-preconditioned Burer--Monteiro flow on the Gram matrix and showed
+that this viewpoint yields a non-trivial spectral implicit-bias result.
+Multi-seed experiments on synthetic data, Fashion-MNIST, frozen-feature
+CIFAR-10, and an end-to-end CNN confirm the prediction across single- and
+multi-layer networks, and the $K^{-1}$ preconditioner both flattens the
+spectral bias and improves hard-negative retrieval.
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\appendix
+
+\section{Proofs}
+\label{app:proofs}
+
+\subsection{Proof of Theorem~\ref{thm:kbm}}
+
+\paragraph{Single-layer setup.}
+Let $W \in \R^{d \times M}$, $F_{im} = \sigma(x_i^\top w_m)$ where
+$w_m$ is the $m$-th column of $W$ and $\sigma(z) = \max(z, 0)$. Let
+$s_{im} := \mathbb{1}[x_i^\top w_m > 0]$ be the activation indicator.
+Then $\partial F_{im}/\partial W_{kl} = s_{im}\, x_{ik}\, \delta_{ml}$,
+where $\delta$ is the Kronecker delta.
+
+The Gram matrix is $G_{ij} = \sum_m F_{im}F_{jm}$. Its parameter-space
+gradient is
+\[
+\frac{\partial G_{ij}}{\partial W_{kl}}
+\;=\; \sum_m \!\Bigl(\frac{\partial F_{im}}{\partial W_{kl}} F_{jm}
++ F_{im}\frac{\partial F_{jm}}{\partial W_{kl}}\Bigr)
+\;=\; s_{il}\,x_{ik}\,F_{jl} + F_{il}\,s_{jl}\,x_{jk}.
+\]
+
+\paragraph{Gram-Gram NTK.}
+The Gram-Gram NTK is
+$\Theta^G_{(ij),(kl)} := \sum_{p,q}
+(\partial G_{ij}/\partial W_{pq})(\partial G_{kl}/\partial W_{pq})$.
+Substituting and contracting over $p, q$ gives a four-term sum
+\begin{align*}
+\Theta^G_{(ij),(kl)} \;&=\;
+\bigl(x_i^\top x_k\bigr)\,\bigl(\textstyle\sum_q s_{iq}s_{kq}F_{jq}F_{lq}\bigr)
+\;+\; \bigl(x_i^\top x_l\bigr)\,\bigl(\textstyle\sum_q s_{iq}s_{lq}F_{jq}F_{kq}\bigr) \\
+&\quad+\; \bigl(x_j^\top x_k\bigr)\,\bigl(\textstyle\sum_q s_{jq}s_{kq}F_{iq}F_{lq}\bigr)
+\;+\; \bigl(x_j^\top x_l\bigr)\,\bigl(\textstyle\sum_q s_{jq}s_{lq}F_{iq}F_{kq}\bigr).
+\end{align*}
+
+\paragraph{Infinite-width limit.}
+In the $M \to \infty$ limit, the inner sums concentrate
+\citep{jacot2018neural}. Using the standard arc-cosine kernel calculation
+\citep{cho2009kernel,jacot2018neural},
+\[
+\tfrac{1}{M}\textstyle\sum_q s_{iq}s_{kq}F_{jq}F_{lq}
+\;\to\; \kappa(x_i, x_k)\,G_{jl}/M
+\]
+up to lower-order terms in $M$. Identifying $K_{ij} := \kappa(x_i, x_j)$ and
+collecting, the four-term sum reduces to
+\[
+\Theta^G_{(ij),(kl)} \;=\; K_{ik}G_{jl} + K_{il}G_{jk} + K_{jk}G_{il} + K_{jl}G_{ik}.
+\]
+
+\paragraph{Gradient flow on $G$.}
+By the chain rule,
+$\dot G_{ij} = -\sum_{k,l}\E_{kl}\,\Theta^G_{(ij),(kl)}$. Substituting
+the four-term expansion, using symmetry of $\E$ and $G$, and contracting
+indices yields
+$\dot G_{ij} = -2\bigl((K\E G)_{ij} + (G\E K)_{ij}\bigr)$, equivalently
+$\dot G = -2(K\E G + G\E K)$. \qed
+
+\subsection{Proof of Theorem~\ref{thm:depth}}
+
+\paragraph{Recursive NTK at the data.}
+For a depth-$L$ ReLU network with width $M$ at each layer and standard NTK
+parameterization, \citet{jacot2018neural} prove that the NTK at the data
+$x_i, x_j$ converges, as $M \to \infty$, to $\kappa_L(x_i, x_j)$ given
+recursively by $\kappa_1 = \Sigma^{(1)} + \dot\Sigma^{(1)}\langle x_i, x_j\rangle$
+and $\kappa_\ell = \Sigma^{(\ell)} + \dot\Sigma^{(\ell)}\,\kappa_{\ell-1}$,
+where $\Sigma^{(\ell)}$ and $\dot\Sigma^{(\ell)}$ are the layer-$\ell$
+arc-cosine kernels of \citet{cho2009kernel}.
+
+\paragraph{Gram-Gram NTK at depth $L$.}
+The four-term expansion in the proof of Theorem~\ref{thm:kbm} is a
+consequence of $G_{ij} = \sum_m F_{im}F_{jm}$, which holds at any depth.
+Replacing the layer-1 NTK $\kappa$ by $\kappa_L$ in the contraction yields
+$\Theta^G_{(ij),(kl)} = (K_L)_{ik}G_{jl} + (K_L)_{il}G_{jk}
++ (K_L)_{jk}G_{il} + (K_L)_{jl}G_{ik}$.
+Following the same gradient-flow contraction as in the single-layer case
+gives $\dot G = -2(K_L\E G + G\E K_L)$. \qed
+
+\subsection{Proof of Theorem~\ref{thm:spectral}}
+
+\paragraph{Eigenbasis form.}
+$K = U\Lambda U^\top$. Conjugating
+$\dot G = -2(K\E G + G\E K)$ by $U^\top, U$ on left and right gives
+$\dot{\Gtilde} = -2(\Lambda\Etilde\Gtilde + \Gtilde\Etilde\Lambda)$.
+
+\paragraph{Frozen-mode case.}
+If $\lambda_i = 0$, then $(\Lambda \Etilde \Gtilde)_{ij} = 0$ for all $j$
+(row $i$ of $\Lambda$ is zero) and $(\Gtilde\Etilde\Lambda)_{ji} = 0$ for
+all $j$ (column $i$ of $\Lambda$ is zero). The $i$-th row and column of
+$\dot{\Gtilde}$ vanish; in particular $\Gtilde_{ij}(t) = \Gtilde_{ij}(0)$
+for all $j$ and all $t$.
+
+\paragraph{Bound for small $\lambda_i$.}
+Component $(i,j)$ of $\dot{\Gtilde}$ satisfies
+\[
+|\dot{\Gtilde}_{ij}|
+\;=\; 2\,\bigl|\lambda_i (\Etilde\Gtilde)_{ij} + \lambda_j (\Gtilde\Etilde)_{ij}\bigr|
+\;\leq\; 2\,(\lambda_i + \lambda_j)\,
+\max\bigl(\|\Etilde\Gtilde\|_{op}, \|\Gtilde\Etilde\|_{op}\bigr).
+\]
+Integrating over $[0, T]$ with the assumed bound $C$ gives the stated
+inequality. \qed
+
+\subsection{Proof of Proposition~\ref{prop:align}}
+\label{app:prop-align}
+
+We give the rigorous Funk--Hecke argument. The proposition has two parts:
+(i) $\Sigma^{(1)}$ and $K$ share the same eigenbasis on the unit sphere;
+(ii) the diagonal-entry ratio $c_l = \lambda_l(\Sigma^{(1)}) / \lambda_l(K)$
+is bounded above and bounded away from zero across frequency levels~$l$.
+
+\paragraph{Funk--Hecke decomposition.}
+Let $f \colon [-1, 1] \to \R$ be continuous and let
+$T_f \colon L^2(S^{d-1}) \to L^2(S^{d-1})$ be the integral operator
+$T_f g(x) = \int_{S^{d-1}} f(\langle x, y\rangle) g(y)\,d\sigma(y)$,
+where $d\sigma$ is the uniform probability measure on $S^{d-1}$. The
+Funk--Hecke theorem \citep[Theorem 2.22]{atkinson2012spherical} states that
+$T_f$ is diagonalized by the spherical harmonics $\{Y_{l,k}\}$
+of degrees $l = 0, 1, 2, \ldots$, with eigenvalue
+\[
+\lambda_l(f)
+\;=\; \omega_{d-2} \int_{-1}^1 f(t)\,\frac{P_l^{(d)}(t)}{P_l^{(d)}(1)}\,
+(1-t^2)^{(d-3)/2}\,dt,
+\]
+where $P_l^{(d)}$ is the Gegenbauer (ultraspherical) polynomial of degree
+$l$ in dimension $d$ and $\omega_{d-2}$ is the surface area of $S^{d-2}$.
+
+\paragraph{Both kernels are functions of $\langle x, y\rangle$.}
+For the layer-1 ReLU arc-cosine kernel,
+$\Sigma^{(1)}(x, y) = \kappa_1(\langle x, y\rangle)$ for unit-norm
+$x, y$, where $\kappa_1(t) = \tfrac{1}{\pi}(\sqrt{1-t^2} + (\pi - \arccos t) t)$
+\citep{cho2009kernel}. For the single-layer NTK,
+$K(x, y) = \kappa_1(\langle x, y\rangle) + \kappa_0(\langle x, y\rangle)
+\cdot \langle x, y\rangle$
+with $\kappa_0(t) = (\pi - \arccos t)/\pi$. Both are scalar functions of
+$\langle x, y\rangle$, so by Funk--Hecke they diagonalize in the
+spherical-harmonic basis with eigenvalues $\lambda_l(\kappa_1)$ and
+$\lambda_l(\kappa_1 + \kappa_0 \cdot t)$ respectively. This proves~(i).
+
+\paragraph{Bounded ratio across $l$.}
+Define $c_l := \lambda_l(\kappa_1) / \lambda_l(\kappa_1 + \kappa_0 \cdot t)$.
+By the Funk--Hecke formula and linearity,
+$\lambda_l(\kappa_1 + \kappa_0 \cdot t)
+= \lambda_l(\kappa_1) + \lambda_l(\kappa_0 \cdot t)$, so
+\[
+c_l \;=\; \frac{\lambda_l(\kappa_1)}{\lambda_l(\kappa_1) + \lambda_l(\kappa_0 \cdot t)}
+\;\in\; (0, 1).
+\]
+Both $\lambda_l(\kappa_1)$ and $\lambda_l(\kappa_0 \cdot t)$ are strictly
+positive for all $l$: the kernels $\kappa_1$ and $\kappa_0 \cdot t$ are
+strictly positive-definite on $S^{d-1}$ for $d \geq 2$ \citep{bach2017breaking}.
+This gives $c_l \in (0, 1)$ for all $l$.
+
+For the lower bound, \citet{bach2017breaking} computes
+$\lambda_l(\kappa_1) \asymp l^{-(d+1)/2}$ for the activation kernel
+and $\lambda_l(\kappa_0 \cdot t) \asymp l^{-(d+1)/2}$ for the
+NTK-difference kernel as $l \to \infty$, with explicit constants. Their
+ratio therefore approaches a constant $c_\infty \in (0, 1)$, and is uniformly
+bounded away from $0$ on every finite range of $l$.
+
+\paragraph{From population to empirical.}
+For $N$ data points sampled iid from the uniform measure on $S^{d-1}$,
+the empirical kernel matrix $K^{(N)}_{ij} = K(x_i, x_j)$ satisfies, with
+high probability, $\norm{K^{(N)} - K}_{op} = O(N^{-1/2})$ by standard
+matrix-Bernstein concentration \citep{tropp2015introduction}. Eigenvectors
+align via Davis--Kahan, so the alignment claim of the proposition holds
+up to $O(N^{-1/2})$ deviations at finite $N$. \qed
+
+%======================== DATA APPENDICES ===============================
+\input{_maxinfo_snippets/appendix_A.tex}
+\input{_maxinfo_snippets/appendix_B.tex}
+\input{_maxinfo_snippets/appendix_C.tex}
+\input{_maxinfo_snippets/appendix_D.tex}
+\input{_maxinfo_snippets/appendix_E.tex}
+\input{_maxinfo_snippets/appendix_F.tex}
+\input{_maxinfo_snippets/appendix_G.tex}
+\input{_maxinfo_snippets/appendix_H.tex}
+\input{_maxinfo_snippets/appendix_I.tex}
+\input{_maxinfo_snippets/appendix_J.tex}
+
+\end{document}

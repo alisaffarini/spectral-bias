@@ -1,0 +1,85 @@
+\section*{NeurIPS Paper Checklist}
+
+\begin{enumerate}
+
+\item {\bf Claims}
+    \item[] Question: Do the main claims made in the abstract and introduction accurately reflect the paper's contributions and scope?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: The abstract and Section~\ref{sec:intro} state the kBM equivalence (Theorem~\ref{thm:kbm}), depth-$L$ extension (Theorem~\ref{thm:depth}), spectral implicit-bias theorems (Theorems~\ref{thm:spectral}, \ref{thm:spectral-refined}), the empirical slope range $1.15$--$2.19$, and the algorithmic preconditioner with retrieval gains; each claim is matched by a corresponding theorem in Section~\ref{sec:theory} or experiment in Section~\ref{sec:experiments}.
+
+\item {\bf Limitations}
+    \item[] Question: Does the paper discuss the limitations of the work performed by the authors?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: Section~\ref{sec:discussion} contains an explicit ``Scope and limitations'' itemised paragraph covering the lazy/NTK regime restriction, single-layer/fully-connected focus of the closed-form theory, the isotropic NTK approximation, finite sample sizes, the Gram-matrix loss class restriction, the absence of a quantitative generalisation bound, and the conditions under which the preconditioner does not help.
+
+\item {\bf Theory assumptions and proofs}
+    \item[] Question: For each theoretical result, does the paper provide the full set of assumptions and a complete (and correct) proof?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: Theorems~\ref{thm:kbm}--\ref{thm:spectral-refined}, Lemma~\ref{lem:eigen}, Proposition~\ref{prop:align}, and Corollary~\ref{cor:gen} all state assumptions explicitly (e.g.\ assumptions (A1)--(A3) for Theorem~\ref{thm:spectral-refined}); proof sketches appear in the main text, full proofs in Appendix~\ref{app:proofs} and~\ref{app:prop-align}.
+
+    \item {\bf Experimental result reproducibility}
+    \item[] Question: Does the paper fully disclose all the information needed to reproduce the main experimental results of the paper to the extent that it affects the main claims and/or conclusions of the paper (regardless of whether the code and data are provided or not)?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: All experiments specify $N$, depth $L$, width $M$, number of triplets, number of seeds, and the precise data preprocessing (Sections~\ref{sec:exp-equiv}--\ref{sec:exp-end2end} and Appendix~\ref{app:impl}); raw multi-seed JSON outputs and code are included as anonymised supplementary material.
+
+\item {\bf Open access to data and code}
+    \item[] Question: Does the paper provide open access to the data and code, with sufficient instructions to faithfully reproduce the main experimental results, as described in supplemental material?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: An anonymised code archive is provided in the supplementary material with module structure (\texttt{kbm/network.py}, \texttt{kbm/kernels.py}, \texttt{kbm/dynamics.py}, \texttt{kbm/loss.py}, \texttt{runners/}) and seed-stamped JSON outputs for every figure and table; data are public (Fashion-MNIST, CIFAR-10).
+
+\item {\bf Experimental setting/details}
+    \item[] Question: Does the paper specify all the training and test details (e.g., data splits, hyperparameters, how they were chosen, type of optimizer) necessary to understand the results?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: Section~\ref{sec:experiments} specifies network depth, width, optimizer (gradient flow integrated by RK4 at the same step size as the network), number of training steps, triplet construction (random vs.\ hard negatives, easy vs.\ hard test triplets), data splits (e.g.\ $N=400$ train / $N=200$ test on CIFAR-10), and the regulariser $\varepsilon=10^{-2}$ for the kernel inverse; further details in Appendix~\ref{app:impl}.
+
+\item {\bf Experiment statistical significance}
+    \item[] Question: Does the paper report error bars suitably and correctly defined or other appropriate information about the statistical significance of the experiments?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: Every reported slope and recall number is a mean $\pm$ standard deviation over 5 random seeds (per-seed log-log power-law fits for slopes); Table~\ref{tab:recall} reports paired-difference standard deviations and we report a paired $t$-test ($t = 5.94$, $p = 0.004$) for the headline R@$10$ improvement.
+
+\item {\bf Experiments compute resources}
+    \item[] Question: For each experiment, does the paper provide sufficient information on the computer resources (type of compute workers, memory, time of execution) needed to reproduce the experiments?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: All experiments run on a single laptop GPU (e.g.\ the empirical-NTK pass at $N=100$, $M=32$ takes $\sim$25 seconds); the synthetic and frozen-feature CIFAR-10 sweeps each complete within minutes per seed. We note this in Section~\ref{sec:exp-end2end} and Appendix~\ref{app:impl}.
+
+\item {\bf Code of ethics}
+    \item[] Question: Does the research conducted in the paper conform, in every respect, with the NeurIPS Code of Ethics \url{https://neurips.cc/public/EthicsGuidelines}?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: The paper is a theoretical and empirical study of optimisation dynamics on standard public benchmarks (Fashion-MNIST, CIFAR-10), uses no human subjects, no private data, and no models or datasets with known dual-use concerns.
+
+\item {\bf Broader impacts}
+    \item[] Question: Does the paper discuss both potential positive societal impacts and negative societal impacts of the work performed?
+    \item[] Answer: \answerNA{}
+    \item[] Justification: This is a foundational theoretical paper on the implicit bias of gradient flow in metric learning; the contributions are mathematical (a new equivalence and a spectral implicit-bias theorem) and methodological (a one-line preconditioner) without a direct path to either positive or negative societal application beyond generic improvements in representation learning.
+
+\item {\bf Safeguards}
+    \item[] Question: Does the paper describe safeguards that have been put in place for responsible release of data or models that have a high risk for misuse (e.g., pre-trained language models, image generators, or scraped datasets)?
+    \item[] Answer: \answerNA{}
+    \item[] Justification: The paper releases analysis code only; no high-risk data, generative model, or scraped dataset is released.
+
+\item {\bf Licenses for existing assets}
+    \item[] Question: Are the creators or original owners of assets (e.g., code, data, models), used in the paper, properly credited and are the license and terms of use explicitly mentioned and properly respected?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: Fashion-MNIST (MIT licence) and CIFAR-10 (publicly released by the Canadian Institute for Advanced Research) are cited via \citet{deng2009imagenet,he2016deep} and the standard dataset references; the ImageNet-pretrained ResNet-18 backbone is from \texttt{torchvision} under the BSD-3-Clause licence.
+
+\item {\bf New assets}
+    \item[] Question: Are new assets introduced in the paper well documented and is the documentation provided alongside the assets?
+    \item[] Answer: \answerYes{}
+    \item[] Justification: The new asset is the \texttt{kbm} code package (anonymised in supplementary material), which contains a top-level README, per-experiment runner scripts, and JSON output files documenting all reported numbers.
+
+\item {\bf Crowdsourcing and research with human subjects}
+    \item[] Question: For crowdsourcing experiments and research with human subjects, does the paper include the full text of instructions given to participants and screenshots, if applicable, as well as details about compensation (if any)?
+    \item[] Answer: \answerNA{}
+    \item[] Justification: The paper contains no crowdsourcing or human-subjects research.
+
+\item {\bf Institutional review board (IRB) approvals or equivalent for research with human subjects}
+    \item[] Question: Does the paper describe potential risks incurred by study participants, whether such risks were disclosed to the subjects, and whether Institutional Review Board (IRB) approvals (or an equivalent approval/review based on the requirements of your country or institution) were obtained?
+    \item[] Answer: \answerNA{}
+    \item[] Justification: The paper does not involve human subjects.
+
+\item {\bf Declaration of LLM usage}
+    \item[] Question: Does the paper describe the usage of LLMs if it is an important, original, or non-standard component of the core methods in this research? Note that if the LLM is used only for writing, editing, or formatting purposes and does \emph{not} impact the core methodology, scientific rigor, or originality of the research, declaration is not required.
+    \item[] Answer: \answerNA{}
+    \item[] Justification: LLMs are not part of the core methodology; the contributions are mathematical theorems and gradient-flow experiments on convolutional and fully-connected ReLU networks.
+
+\end{enumerate}
