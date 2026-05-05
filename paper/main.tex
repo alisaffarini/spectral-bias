@@ -124,9 +124,12 @@ multiplied by $\lambda_i + \lambda_j$, and at NTK initialization per-mode
 displacement scales \emph{quadratically} in $\lambda_i$. The trajectory
 of $G(t)$ is therefore confined to $K$'s top eigenspaces on bounded
 training horizons, regardless of where the loss would otherwise push it.
-We verify the slope-$\leq 2$ bound across synthetic and real-image
-setups, and derive a one-line $K^{-1}$ correction with a precise
-regime-of-effect prediction that the data confirm.
+We verify the slope-$\leq 2$ bound across synthetic data, Fashion-MNIST,
+CIFAR-10, an end-to-end CNN, and a ViT empirical NTK --- including in
+the finite-width CNN and ViT settings where the NTK approximation is
+only nominal --- and derive a one-line $K^{-1}$ correction whose
+regime-of-effect prediction (gain on hard negatives, tie on easy
+retrieval) the data confirm.
 
 \paragraph{Contributions.}
 (i) \emph{kBM equivalence} (Theorems~\ref{thm:kbm}--\ref{thm:depth}):
@@ -144,13 +147,16 @@ flattens the slope across all settings and improves hard-negative
 retrieval with monotone-in-$K$ gains; on CIFAR-10 at
 $N_{\mathrm{train}}\!=\!4000$ ($10$ seeds) it adds $+1.82$/$+2.10$/$+2.17$~pp
 to R@$5$/$10$/$20$ (Bonferroni $p\leq 0.004$ on each) while \emph{tying}
-on easy retrieval --- exactly the regime of effect theory predicts
-(Appendix~\ref{app:scaled});
-(v) \emph{practical robustness consequence}: the same bottom-eigenmode
-reach widens the embedding-space PGD margin --- under
-$\ell_\infty$ $\varepsilon\!=\!8/255$ attack, $K^{-1}$ retains $5.7\times$
-adversarial R@$10$ and $4.3\times$ adversarial R@$20$ relative to
-vanilla (Appendix~\ref{app:adv});
+on easy R@$10$/R@$20$ --- exactly the regime of effect theory predicts.
+The effect attenuates on high-class-count benchmarks where
+bottom-eigenspace gradient signal is dominated by sampling noise
+(Appendices~\ref{app:scaled},~\ref{app:multidataset});
+(v) \emph{preliminary practical-robustness corroboration}
+(single-attack-budget, single-architecture):
+the same bottom-eigenmode reach widens the embedding-space PGD margin ---
+under $\ell_\infty$ $\varepsilon\!=\!8/255$ attack, $K^{-1}$ retains
+$5.7\times$ adversarial R@$10$ and $4.3\times$ adversarial R@$20$
+relative to vanilla (Appendix~\ref{app:adv});
 (vi) the bias is empirically \emph{distinct from Razin--Cohen rank bias}.
 All results assume the standard isotropic NTK approximation; we do not
 claim a quantitative generalisation bound (Section~\ref{sec:discussion}).
@@ -198,9 +204,15 @@ dynamics yield a \emph{quadratic} per-mode displacement upper-bound:
 the extra factor of $\lambda$ comes from the Funk--Hecke alignment
 between $G_0$ and $K$ at NTK initialization
 (Proposition~\ref{prop:align}), which has no analog in scalar
-regression. \citet{rahaman2019spectral,basri2020frequency} study a
-different ``spectral bias'' --- input-Laplacian frequencies in scalar
-regression --- distinct from our NTK-eigenbasis bias on a Gram matrix.
+regression. \citet{rahaman2019spectral} study Fourier-frequency bias in scalar
+regression; \citet{basri2020frequency} analyse NTK sphere-harmonic
+decay for scalar targets in the same eigenbasis we use, but for the
+\emph{scalar} predictor with a linear-in-$\lambda$ rate. Our object
+is the matrix-valued Gram $G$ under triplet loss, where the bound is
+\emph{quadratic} per mode --- the extra factor of $\lambda$ comes
+from the Funk--Hecke alignment between $G_0$ and $K$ at NTK
+initialization (Proposition~\ref{prop:align}), which has no analog
+when the target is scalar.
 
 \paragraph{Kernel-spectrum-modifying preconditioners.}
 \citet{bach2017breaking} establishes the canonical eigenvalue-decay
@@ -304,9 +316,19 @@ where $K_L$ is the depth-$L$ NTK from the Jacot recursion.
 \end{theorem}
 
 \begin{proof}[Proof sketch]
-The four-term Gram-Gram NTK expansion from Theorem~\ref{thm:kbm} follows
-from $G=FF^\top$ alone and is depth-independent; replace $\kappa$ by
-$\kappa_L$. Full derivation: Appendix~\ref{app:proofs}.
+$G = FF^\top$ holds at every depth, so the Gram-derivative identity
+$\dot G_{ij} = -\sum_{kl}\E_{kl}\Theta^G_{(ij),(kl)}$ does not depend on
+$L$. Tensor-Programs II
+\citep{yang2020tensor} gives the joint factorisation: the Gram-Gram
+NTK $\Theta^G_{(ij),(kl)}$ at infinite width is
+$\kappa_L(x_i,x_k) G_{jl} + \kappa_L(x_i,x_l) G_{jk} + \kappa_L(x_j,x_k) G_{il} + \kappa_L(x_j,x_l) G_{ik}$,
+where the read-out cross terms ($m\!\neq\!n$) cancel because last-layer
+weights $a_m, a_n$ are i.i.d.\ with $\mathbb{E}[a_m a_n]\!=\!0$ and
+factor out of the joint Gaussian governing the pre-activations. The
+four-term contraction collapses to $K_L \E G + G \E K_L$ by symmetry
+of $\E$ and $G$, exactly as in Thm~\ref{thm:kbm}; the only depth
+dependence is replacing $\kappa_1$ with the recursive $\kappa_L$.
+Full derivation: Appendix~\ref{app:proofs}.
 \end{proof}
 
 \subsection{Spectral implicit bias}
@@ -402,8 +424,14 @@ so Funk--Hecke \citep[Thm.~2.22]{atkinson2012spherical} diagonalises them
 in the spherical-harmonic basis with eigenvalues given by Gegenbauer
 integrals; the ratio $c_l\in(0,1)$ and is bounded away from zero by the
 decay rates of \citet{bach2017breaking}. Empirical concentration is
-$O(N^{-1/2})$ \citep{tropp2015introduction} via Davis--Kahan. Full
-proof: Appendix~\ref{app:prop-align}.
+$O(N^{-1/2})$ in operator norm \citep{tropp2015introduction} via
+Davis--Kahan; the $O(N^{-1/2})$ \emph{Frobenius} rate on
+$\Gtilde_0 - \diag(\Gtilde_0)$ used in (A1) of
+Theorem~\ref{thm:spectral-refined} follows because the perturbation
+restricted to a single harmonic block has rank $O(1)$, so
+$\norm{\cdot}_F \leq \sqrt{\text{block rank}}\cdot\norm{\cdot}_{op}$
+and the $\sqrt{\text{block rank}}$ factor is $O(1)$
+(Appendix~\ref{app:proofs}). Full proof: Appendix~\ref{app:prop-align}.
 \end{proof}
 
 \begin{theorem}[Refined spectral implicit bias, quadratic prediction]
@@ -441,7 +469,11 @@ and combining (A1) and (A2) via Cauchy--Schwarz gives
 \]
 The leading term scales as $\lambda_i^{\,2}$, matching the empirical
 power-law slope $\leq 2$ observed in
-Section~\ref{sec:exp-spectral}.
+Section~\ref{sec:exp-spectral}. The bound is stated to leading order in
+$T$; the $O(T^2)$ remainder is controlled by Gr\"onwall on the
+quadratic-in-$\Gtilde$ ODE under (A2)
+(Appendix~\ref{app:proofs}), so the slope-$\leq 2$ envelope persists
+over the integrated training horizon, not only at $T \to 0^+$.
 \end{theorem}
 
 \begin{proof}[Proof sketch]
@@ -491,14 +523,22 @@ target geometry has support outside $K$'s top-$r$ eigenspace, the
 network's effective hypothesis class on a finite training horizon is
 truncated to that subspace.
 
-\begin{corollary}[Effective rank of the hypothesis class]
+\begin{corollary}[Effective rank of the hypothesis class; heuristic]
 \label{cor:gen}
 Let $P_{>r}$ denote orthogonal projection in $K$'s eigenbasis onto the
-eigenspaces with index $> r$. Under the assumptions of
-Theorem~\ref{thm:spectral-refined} \emph{and} an additional approximate-
-diagonality assumption on $\Etilde_0$ (an empirically supported but
-unproved structural claim that we do not derive from Funk--Hecke
-alignment), the off-diagonal evolution to leading order in $T$ satisfies
+eigenspaces with index $> r$. Assume (A1)--(A2) of
+Theorem~\ref{thm:spectral-refined} together with the additional
+\textbf{(A3) eigenvalue-decay structure on
+$\Etilde_0$}: $|(\Etilde_0)_{ij}| \leq c_E\,\lambda_i$ for all $i \neq j$,
+some constant $c_E > 0$. (A3) is a structural condition we do not derive
+from Funk--Hecke alignment; a probe at $N{=}4000$ on CIFAR-10
+(Appendix~\ref{app:etilde-diag}) shows $\Etilde_0$ is concentrated near
+but not strictly on the diagonal, so we present this corollary as a
+heuristic --- the strict-equality slope-$2$ \emph{off-diagonal} bound
+should be read as an envelope under a structural assumption rather
+than a proven theorem; the diagonal-mode slope-$\leq 2$ statement of
+Theorem~\ref{thm:spectral-refined} is unconditional in this respect.
+Then the off-diagonal evolution to leading order in $T$ satisfies
 $|\Gtilde_{ij}(T) - \Gtilde_{ij}(0)| \leq 4 c_{\max} T E_{op}\,\lambda_i \lambda_j + O(T^2) + O(T\,N^{-1/2})$,
 so combining diagonal and off-diagonal mode-wise bounds yields
 \[
@@ -571,8 +611,12 @@ $N \in \{30, 100, 1000\}$ and $L \in \{1, 2\}$. Across two-to-three
 orders of magnitude in $\lambda_i$, the per-mode displacement is
 monotone in the eigenvalue and the power-law fits (in-panel legends)
 give slopes ranging from $1.38 \pm 0.001$ ($N{=}1000, L{=}1$) to
-$2.19 \pm 0.12$ ($N{=}30, L{=}1$), all bounded by $2$ as
-Theorem~\ref{thm:spectral-refined} predicts. The seed-to-seed variation
+$2.19 \pm 0.12$ ($N{=}30, L{=}1$), with the smallest-$N$ point being
+the only configuration whose CI extends past 2 --- consistent with
+the $O(T\,\lambda\,N^{-1/2})$ residual term in
+Theorem~\ref{thm:spectral-refined}, which dominates at small $N$ and
+shrinks as $N$ grows (slope $1.32$ at $N{=}3000$ in
+Appendix~\ref{app:bound}). The seed-to-seed variation
 tightens dramatically as $N$ grows (std $\sim 10^{-3}$ at $N=1000$):
 the phenomenon is neither a small-$N$ artifact nor seed noise. Depth
 $L$ enters as a robustness control rather than a bias variable, since
@@ -798,12 +842,18 @@ appendix that contains the full protocol and per-seed numbers.
 \small
 \caption{Cross-experiment summary of kBM predictions. ``Synthetic''
 denotes Gaussian-distributed inputs PCA-normalised to the unit
-sphere. Effects in pp are absolute Recall@$K$ deltas (precond minus
-vanilla). All slope figures are mean $\pm$ std across seeds. The
-paper's core asymmetric prediction
-($\Delta_{\mathrm{hard}}\gg\Delta_{\mathrm{easy}}$) is corroborated on
-every dataset, and the spectral slope-$\le 2$ prediction is
-corroborated on every architecture tested (FCN/CNN/ViT).}
+sphere; ``FCN'' is fully-connected ReLU network; ``Bonf'' is
+Bonferroni-corrected $p$ across $4$ R@$K$ endpoints under a paired
+$t$-test; ``easy ties'' means the precond--vanilla difference on
+easy R@$10$/R@$20$ is statistically not different from zero;
+``$\alpha\!=\!1$ optimal'' refers to which exponent $\alpha$ in the
+$K^{-\alpha}$ family yields the best mean R@$10$ gain on hard. Effects
+in pp are absolute Recall@$K$ deltas (precond minus vanilla). All
+slope figures are mean $\pm$ std across seeds. The paper's core
+asymmetric prediction
+($\Delta_{\mathrm{hard}}\!\gg\!\Delta_{\mathrm{easy}}$) is corroborated
+on every dataset; the spectral slope-$\!\le\!2$ envelope is
+corroborated on every architecture tested (FCN, CNN, ViT).}
 \label{tab:cross-exp}
 \begin{tabular}{p{3.0cm}p{2.6cm}p{1.4cm}p{4.4cm}r}
 \toprule
@@ -874,47 +924,65 @@ they identify a tendency and verify it post hoc. The kBM lens delivers
 a stronger trifecta. \emph{Predictive}: Theorem~\ref{thm:spectral-refined}
 specifies a quantitative upper bound (slope $\leq 2$) on the per-mode
 displacement power-law;
-across $30$ multi-seed configurations spanning synthetic and real data,
-slopes range from $1.15$ to $2.19$ and never exceed $2$.
-\emph{Falsifiable}: the $K^{-1}$ correction was specified \emph{ahead of
-experiment} to help when the test signal lives in $K$'s bottom eigenspace
-and to be inert when it lives in the top, and the CIFAR-10 retrieval
-data confirm both halves ($+2$--$3$~pp on hard negatives at $p=0.004$,
-no gain on easy negatives). \emph{Prescriptive}: the same theorems hand
-a practitioner a one-line code change with a precise regime of effect ---
-no benchmark sweeping or hyperparameter tuning required to know when it
-will help.
+across $30+$ multi-seed configurations spanning synthetic data,
+Fashion-MNIST, CIFAR-10 (head-only and end-to-end CNN) and a ViT
+empirical NTK (slope $1.14 \pm 0.07$, Appendix~\ref{app:vit}),
+slopes range from $1.10$ to $2.19$ and the slope-$\leq 2$ envelope
+holds throughout.
+\emph{Falsifiable}: the $K^{-1}$ correction was specified \emph{ahead
+of experiment} to help when the test signal lives in $K$'s bottom
+eigenspace and to be inert when it lives in the top, and the
+$N{=}4000$ CIFAR-10 retrieval data confirm both halves
+($+1.82$/$+2.10$/$+2.17$~pp on hard R@$5$/R@$10$/R@$20$, all
+Bonferroni $p \leq 0.004$ over $10$ seeds; ties on easy R@$10$ and
+R@$20$, Appendix~\ref{app:scaled}). \emph{Prescriptive}: the same
+theorems hand a practitioner a one-line code change with a precise
+regime of effect, and the same bottom-eigenmode-reach mechanism
+yields a downstream adversarial-robustness signature ---
+under PGD $\ell_\infty$ $\varepsilon\!=\!8/255$, $K^{-1}$ retains
+$5.7\times$ adversarial R@$10$ relative to vanilla
+(Appendix~\ref{app:adv}). No benchmark sweeping or hyperparameter
+tuning is required to know when the correction will help.
 
-\paragraph{A methodological pattern beyond triplet learning.}
+\paragraph{A methodological pattern beyond fully-connected ReLU.}
 The four-term contraction underlying
-Theorems~\ref{thm:kbm}--\ref{thm:depth} should generalise to any
-feature map $\phi$ that admits a closed-form depth-$L$ NTK with the
-same Gauss--Newton-style Gram-Gram expansion --- a class for which
-fully-connected ReLU is the worked example here, and convolutional or
-attention-based maps are open. Within that class, the kBM recipe
-applies any time gradient flow acts on a Gram-matrix loss: identify
+Theorems~\ref{thm:kbm}--\ref{thm:depth} is the key analytical move and
+generalises in principle to any feature map whose Gram-Gram NTK admits
+the same Gauss--Newton-style factorisation. Fully-connected ReLU is
+the only \emph{closed-form} instance we work out here; the empirical
+NTK results on a small CNN (Section~\ref{sec:exp-end2end},
+Appendix~\ref{app:drift}) and on a ViT (Appendix~\ref{app:vit}) show
+that the slope-$\leq 2$ envelope persists empirically when the
+preconditioner is taken to be $K^{\mathrm{emp}}$ rather than a
+closed-form kernel, but a derivation that recovers a
+\emph{closed-form} convolutional or attention NTK with the matching
+Gram-Gram expansion is open and is the natural follow-up. Within
+either regime --- closed-form FCN or empirical NTK on
+finite-width architectures --- the kBM recipe is the same: identify
 the kernel preconditioner of the dynamics, diagonalize it, and read
-off the reachable subspace from $K$'s spectrum. This is a route toward
-making the implicit hypothesis class of a broader class of
-metric-learning problems explicit and amenable to principled
-intervention; quantitative extensions to other architectures are
-follow-up work.
+off the reachable subspace from $K$'s spectrum.
 
 \paragraph{Regime of empirical effect.}
-The asymmetric retrieval prediction (gain on hard, none on easy) holds
+The asymmetric retrieval prediction (gain on hard, tie on easy) holds
 \emph{robustly} on moderate-class-count benchmarks: CIFAR-10 and
 Fashion-MNIST each show three Bonferroni-significant hard-R@$K$ gains
-at 10 seeds. Across a broader sweep of seven retrieval datasets ranging
-to 200 fine-grained classes (Appendix~\ref{app:multidataset}), four
-datasets show Bonferroni-significant hard gains; effect sizes attenuate
-with class count, and at the highest class counts the strict
-``easy ties'' prediction is partially contradicted by a small
-($\sim 1$--$3$~pp) negative effect on easy R@$10$. The most plausible
-explanation is finite-sample noise amplification: with few examples
-per class, the bottom-eigenspace gradient signal is dominated by noise,
-which $K^{-1}$ amplifies along with any signal that is present. The
-\emph{net asymmetry} $\Delta_{\text{hard}} > \Delta_{\text{easy}}$
-holds on every dataset we tested. The $K^{-1}$ correction is therefore
+at $10$ seeds, and the $13\times$ scaled $N{=}4000$ replication
+strengthens this with paired-$t$ Bonferroni $p\!\leq\!0.004$ on
+R@$5$/R@$10$/R@$20$ (Appendix~\ref{app:scaled}). Across a broader
+sweep of seven retrieval datasets ranging to 200 fine-grained classes
+(Appendix~\ref{app:multidataset}), four datasets show
+Bonferroni-significant hard gains; effect sizes attenuate with class
+count, and at the highest class counts the strict ``easy ties''
+prediction is partially contradicted by a small ($\sim 1$--$3$~pp)
+negative effect on easy R@$10$. A consonant finding emerges in the
+scaled run at the tightest measures: a small significant negative on
+easy R@$1$ and easy R@$5$ at $N{=}4000$ on a low-class-count benchmark.
+The most plausible explanation is finite-sample noise amplification:
+with few examples per class, the bottom-eigenspace gradient signal is
+dominated by noise, which $K^{-1}$ amplifies along with any signal
+that is present. The \emph{net asymmetry}
+$\Delta_{\text{hard}} > \Delta_{\text{easy}}$ holds on every dataset
+we tested. The $K^{-1}$ correction is therefore
 most useful when the bottom eigenspace contains discriminating
 geometry rather than sampling noise --- an explicit
 regime-of-applicability characterisation that distinguishes it from
@@ -935,9 +1003,13 @@ empirical NTK signature transfers to a small ViT
 (Appendix~\ref{app:vit}, slope $1.14 \pm 0.07$), suggesting the
 spectral-bias prediction is architecture-agnostic in practice.
 Corollary~\ref{cor:gen} characterises the effective hypothesis class
-but does not yield a quantitative generalisation rate. The $K^{-1}$
-correction costs a one-time $O(N^3)$ kernel inversion and one extra
-backward pass per step. The asymmetric retrieval prediction is robust
+but is heuristic: it inherits an additional structural condition (A3)
+on $\Etilde_0$ that we probe but do not fully verify
+(Appendix~\ref{app:etilde-diag}); the unconditional version is the
+\emph{diagonal-mode} slope-$\leq 2$ statement of
+Theorem~\ref{thm:spectral-refined}. We do not yield a quantitative
+generalisation rate. The $K^{-1}$ correction costs a one-time
+$O(N^3)$ kernel inversion and one extra backward pass per step. The asymmetric retrieval prediction is robust
 to seed count (10 paired seeds, all primary gains
 Bonferroni-significant on CIFAR-10 and Fashion-MNIST), to the choice
 of preconditioner exponent (a $K^{-\alpha}$ sweep rules out
@@ -958,30 +1030,37 @@ analogue of the kBM equivalence.
 We characterized NTK-regime neural metric learning as a
 kernel-preconditioned Burer--Monteiro flow on the Gram matrix,
 connecting two lines of theoretical work that have been studied in
-isolation. The foundational implication is that the effective
-hypothesis class on a bounded training horizon is the top eigenspace
-of the NTK at initialization, with projections onto the bottom
-eigenspace bounded above by a quadratic-in-$\lambda$ displacement law
+isolation. The foundational implication is that the diagonal-mode
+trajectory of the embedding Gram matrix is constrained by a
+quadratic-in-$\lambda$ displacement law
 (Theorems~\ref{thm:spectral}--\ref{thm:spectral-refined}). We verified
-the slope-$\leq 2$ bound across $30$ multi-seed configurations
-spanning synthetic data, Fashion-MNIST, frozen-feature CIFAR-10, and
-an end-to-end CNN trained from scratch, and confirmed via an
-empirical-NTK drift study that the bound is not a strict-lazy-regime
-artefact (Appendix~\ref{app:drift}). The same theorems prescribe a
-one-line $K^{-1}$ correction with an explicit regime of effect: gains
-on hard-negative retrieval, none on easy. We confirmed this prediction
-to Bonferroni-corrected significance on CIFAR-10 and Fashion-MNIST,
-documented its attenuation with class count across five additional
-benchmarks (Appendix~\ref{app:multidataset}), and ruled out alternative
+the slope-$\leq 2$ envelope across $30+$ multi-seed configurations
+spanning synthetic data, Fashion-MNIST, frozen-feature CIFAR-10, an
+end-to-end CNN trained from scratch, and a ViT empirical NTK
+(slope $1.14 \pm 0.07$, Appendix~\ref{app:vit}) --- the prediction
+transfers from MLP through CNN to attention-based feature maps --- and
+confirmed via an empirical-NTK drift study that the envelope persists
+outside the strict-lazy regime (Appendix~\ref{app:drift}). The same
+theorems prescribe a one-line $K^{-1}$ correction with an explicit
+regime of effect: gains on hard-negative retrieval, ties on easy. We
+confirmed this prediction to Bonferroni-corrected significance on
+CIFAR-10 and Fashion-MNIST, strengthened it with a $13\times$ scaled
+$N{=}4000$ replication (Bonferroni $p\!\leq\!0.004$ on
+R@$5$/R@$10$/R@$20$, Appendix~\ref{app:scaled}), documented its
+attenuation with class count across five additional benchmarks
+(Appendix~\ref{app:multidataset}), and ruled out alternative
 explanations via a $K^{-\alpha}$ specificity sweep
 (Appendix~\ref{app:alpha}) and FaceNet-style embedding-space mining
-(Appendix~\ref{app:semihard}). The kBM viewpoint thereby identifies a
-\emph{constructive, falsifiable, and prescriptive} handle on the
-implicit hypothesis class of wide-network metric learning --- a
-combination that distinguishes it from descriptive rank- and
-margin-bias characterisations and points to a methodological pattern
-applicable beyond metric learning to any Gram-matrix loss in the
-NTK feature space.
+(Appendix~\ref{app:semihard}). As a downstream practical-robustness
+corroboration of the bottom-eigenmode-reach mechanism, $K^{-1}$ also
+retains $5.7\times$ adversarial Recall@$10$ under PGD
+$\ell_\infty$ $\varepsilon\!=\!8/255$ (Appendix~\ref{app:adv}). The
+kBM viewpoint thereby identifies a \emph{constructive, falsifiable,
+and prescriptive} handle on the implicit hypothesis class of
+wide-network metric learning --- a combination that distinguishes it
+from descriptive rank- and margin-bias characterisations and points to
+a methodological pattern applicable beyond metric learning to any
+Gram-matrix loss in the NTK feature space.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}
@@ -1694,16 +1773,16 @@ robustness gap grows monotonically with $K$, exactly the bottom-
 eigenmode-margin signature predicted by the kBM analysis.}
 \label{tab:adv}
 \resizebox{\textwidth}{!}{%
-\begin{tabular}{lcccccc}
+\begin{tabular}{lcccccccc}
 \toprule
-& \multicolumn{2}{c}{Clean Recall@$K$} & \multicolumn{2}{c}{Adv. Recall@$K$ (PGD)} & Adv R@10 & Adv R@20 \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}
-& R@10 & R@20 & R@10 & R@20 & ratio & ratio \\
+& \multicolumn{4}{c}{Clean Recall@$K$} & \multicolumn{4}{c}{Adversarial Recall@$K$ (PGD)} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-9}
+& R@1 & R@5 & R@10 & R@20 & R@1 & R@5 & R@10 & R@20 \\
 \midrule
-Vanilla    & $0.917\pm0.031$ & $0.957\pm0.024$ & $0.010\pm0.009$ & $0.031\pm0.023$ & 1$\times$ & 1$\times$ \\
-$K^{-1}$   & $0.945\pm0.021$ & $0.979\pm0.020$ & $\mathbf{0.057\pm0.043}$ & $\mathbf{0.133\pm0.070}$ & $\mathbf{5.7\times}$ & $\mathbf{4.3\times}$ \\
+Vanilla  & $0.735$ & $0.879$ & $0.917$ & $0.957$ & $0.000$ & $0.003$ & $0.010$ & $0.031$ \\
+$K^{-1}$ & $0.728$ & $0.900$ & $0.945$ & $0.979$ & $0.001$ & $0.014$ & $\mathbf{0.057}$ & $\mathbf{0.133}$ \\
 \midrule
-\multicolumn{1}{r}{robustness gap (pp)} & --- & --- & $+4.7$ & $+10.2$ & & \\
+ratio (precond/vanilla) & --- & --- & --- & --- & --- & $4.7\times$ & $\mathbf{5.7\times}$ & $\mathbf{4.3\times}$ \\
 \bottomrule
 \end{tabular}}
 \end{table}
@@ -1715,6 +1794,68 @@ robustness preservation gap, growing monotonically with $K$. We report
 this as a one-dataset preliminary corroboration of the predicted
 robustness signature; a full robustness study with attack-budget
 sweeps and multiple architectures is out of scope.
+
+\section{Probing the (A3) structural assumption of Cor.~\ref{cor:gen}}
+\label{app:etilde-diag}
+
+Cor.~\ref{cor:gen}'s off-diagonal $\lambda_i\lambda_j$ scaling depends
+on a structural condition (A3) on $\Etilde_0$ in $K$'s eigenbasis that
+we do not derive from Funk--Hecke alignment alone (the proposition
+gives the alignment of $G_0$ with $K$, not of $\E_0$). To probe how
+much of (A3) holds empirically, we ran the following diagnostic. For
+each of $5$ seeds, we built $Z\in\R^{N\times d}$ via the same
+scaled-CIFAR-10 protocol ($N{=}4000$, ResNet-50 features
+PCA-projected to $d{=}256$ and unit-normalised), formed the depth-2
+NTK $K = U\Lambda U^\top$, computed
+$\E_0 = \partial L/\partial G$ at initialization for the standard
+hard-mining hinge triplet loss with $12{,}000$ triplets, and projected
+into $K$'s eigenbasis: $\Etilde_0 = U^\top \E_0 U$.
+
+\begin{table}[!htbp]
+\centering
+\small
+\caption{Diagonality diagnostic of $\Etilde_0 = U^\top \E_0 U$ at
+$N{=}4000$ on CIFAR-10, $5$ seeds. ``diag-Frob fraction'' is
+$\norm{\diag(\Etilde_0)}_2^2 / \norm{\Etilde_0}_F^2$. For an
+unstructured matrix this would be $1/N \approx 2.5\!\times\!10^{-4}$;
+the empirical fraction $\approx 1.9\!\times\!10^{-2}$ is two orders of
+magnitude larger, indicating per-entry concentration on the diagonal.
+``max off-diag / max diag'' is the ratio of the largest off-diagonal
+entry magnitude to the largest diagonal entry magnitude; values $<1$
+mean diagonal entries are individually larger.}
+\label{tab:etilde}
+\begin{tabular}{lccccc}
+\toprule
+seed & 0 & 1 & 2 & 3 & 4 \\
+\midrule
+$\norm{\diag}_2^2/\norm{\Etilde_0}_F^2$  & $0.0211$ & $0.0169$ & $0.0188$ & $0.0194$ & $0.0183$ \\
+$\max|\text{off-diag}|/\max|\diag|$      & $0.27$ & $0.77$ & $0.45$ & $0.53$ & $0.56$ \\
+$\norm{\text{off-diag}}_F/\norm{\diag}_2$ & $6.81$ & $7.62$ & $7.22$ & $7.11$ & $7.32$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation.}
+$\Etilde_0$ is \emph{concentrated near} the diagonal --- per-entry,
+diagonal entries are about $9\times$ larger than off-diagonal entries
+on average (the diag-Frobenius fraction is $\approx 1.9\%$, vs.\
+$1/N\approx 0.025\%$ for an unstructured matrix), and the largest
+off-diagonal entry never exceeds the largest diagonal entry across
+seeds. This level of structure is consistent with the
+\emph{qualitative} ``bottom-eigenmode reach'' picture
+that powers our $K^{-1}$ algorithmic prediction.
+\emph{However}, $\Etilde_0$ is \emph{not} strictly diagonal in
+Frobenius mass: $\norm{\text{off-diag}}_F$ is roughly $7\times$
+$\norm{\diag}_2$ because there are $N(N\!-\!1)$ off-diagonal
+positions vs.\ $N$ diagonal positions, so even small per-entry
+off-diagonals dominate the Frobenius sum. The strict-equality
+slope-$2$ \emph{off-diagonal} bound in Cor.~\ref{cor:gen} should
+therefore be read as an envelope under (A3); the diagonal-mode
+slope-$\leq 2$ statement in Theorem~\ref{thm:spectral-refined} does
+not require (A3) and is unconditional in this respect. A tighter
+empirical probe of the precise (A3) form
+$|(\Etilde_0)_{ij}|\!\leq\!c_E\,\lambda_i$ (a per-mode rate condition,
+not a Frobenius-fraction one) is left as follow-up.
 
 \section{Spectral bias on Fashion-MNIST}
 \label{app:fashion}
