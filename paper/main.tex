@@ -73,6 +73,17 @@ regime where the theory predicts an effect.
 \section{Introduction}
 \label{sec:intro}
 
+Modern retrieval, re-identification, contrastive pre-training, and
+representation-learning pipelines all depend on a metric-learning
+objective trained with stochastic gradient descent --- yet the
+\emph{shape} of the geometry such an objective induces, and in
+particular which directions in feature space are reachable in finite
+training, has no closed-form characterisation. Practitioners cannot
+predict in advance which similarity structures their network will fit;
+when retrieval underperforms on hard negatives or fails under
+adversarial perturbation, there is no theory pointing to a
+principled correction. This paper provides one.
+
 Neural metric learning trains an embedding $f_\theta: \R^d \to \R^k$ so that
 $\norm{f_\theta(x) - f_\theta(y)}^2$ encodes a desired similarity geometry.
 The standard recipe is to minimize a triplet or contrastive loss --- a
@@ -123,17 +134,24 @@ single-layer and depth-$L$ ReLU gradient flow on $L(G)$ obeys
 $\dot G = -2(K\E G + G\E K)$, recovering classical BM when $K=I$;
 (ii) \emph{spectral implicit-bias theorems}: a model-free linear-in-$\lambda$
 rate ordering (Theorem~\ref{thm:spectral}) sharpens to a quadratic
-prediction in the NTK regime (Theorem~\ref{thm:spectral-refined}),
-yielding an effective hypothesis class of rank $r(T,\delta)$
-(Corollary~\ref{cor:gen});
+prediction in the NTK regime (Theorem~\ref{thm:spectral-refined});
 (iii) \emph{multi-seed numerical verification} on synthetic data,
-Fashion-MNIST, frozen-feature CIFAR-10, and an end-to-end CNN, with
-slopes spanning $1.15$--$2.19$ (all $\leq 2$);
+Fashion-MNIST, frozen-feature CIFAR-10, an end-to-end CNN, and a
+ViT empirical NTK (Appendix~\ref{app:vit}), with slopes spanning
+$1.14$--$2.19$ (all~$\leq 2$);
 (iv) \emph{theory-derived correction}: a one-line $K^{-1}$ preconditioner
 flattens the slope across all settings and improves hard-negative
-CIFAR-10 Recall@$10$ by $+3.2$~pp ($p=0.004$) with no gain on easy
-retrieval --- exactly the regime of effect theory predicts;
-(v) the bias is empirically \emph{distinct from Razin--Cohen rank bias}.
+retrieval with monotone-in-$K$ gains; on CIFAR-10 at
+$N_{\mathrm{train}}\!=\!4000$ ($10$ seeds) it adds $+1.82$/$+2.10$/$+2.17$~pp
+to R@$5$/$10$/$20$ (Bonferroni $p\leq 0.004$ on each) while \emph{tying}
+on easy retrieval --- exactly the regime of effect theory predicts
+(Appendix~\ref{app:scaled});
+(v) \emph{practical robustness consequence}: the same bottom-eigenmode
+reach widens the embedding-space PGD margin --- under
+$\ell_\infty$ $\varepsilon\!=\!8/255$ attack, $K^{-1}$ retains $5.7\times$
+adversarial R@$10$ and $4.3\times$ adversarial R@$20$ relative to
+vanilla (Appendix~\ref{app:adv});
+(vi) the bias is empirically \emph{distinct from Razin--Cohen rank bias}.
 All results assume the standard isotropic NTK approximation; we do not
 claim a quantitative generalisation bound (Section~\ref{sec:discussion}).
 
@@ -144,7 +162,11 @@ claim a quantitative generalisation bound (Section~\ref{sec:discussion}).
 The NTK framework \citep{jacot2018neural} reduces wide-network training
 to kernel regression; \citet{lee2019wide} extend the convergence to any
 depth $L$ and give the standard finite-width concentration rate.
-\citet{chizat2020implicit} formalises the lazy/rich dichotomy.
+\citet{chizat2020implicit} formalises the lazy/rich dichotomy. The
+\emph{Tensor Programs} framework \citep{yang2020tensor} establishes
+the joint NTK factorisation across architecture classes (FCN, CNN,
+attention) at infinite width that we leverage in the depth-$L$ proof
+(Appendix~\ref{app:proofs}).
 
 \paragraph{Burer--Monteiro factorization, and the closest BM-meets-NN prior art.}
 \citet{burer2003nonlinear,burer2005local} introduced $X=UU^\top$ for SDPs;
@@ -181,6 +203,9 @@ different ``spectral bias'' --- input-Laplacian frequencies in scalar
 regression --- distinct from our NTK-eigenbasis bias on a Gram matrix.
 
 \paragraph{Kernel-spectrum-modifying preconditioners.}
+\citet{bach2017breaking} establishes the canonical eigenvalue-decay
+calibration of arc-cosine NTK kernels on the sphere that grounds our
+slope analysis (Section~\ref{sec:exp-spectral}).
 The closest algorithmic neighbour is \citet{amir2023controlling}, who
 modify the NTK spectrum directly to control inductive bias in
 \emph{scalar} (regression / classification) wide-network training.
@@ -238,9 +263,11 @@ matrix $G$ evolves, in the limit $M \to \infty$, as
 \[
 \dot{G} \;=\; -2\,\bigl(K\,\E\,G + G\,\E\,K\bigr).
 \]
-For finite width $M$ the same equation holds with the empirical kernel
-$K^{(M)}$ in place of $K$; the gap $\norm{K^{(M)} - K}_{op} = O_p(M^{-1/2})$
-under standard assumptions \citep{jacot2018neural,lee2019wide}.
+For finite width $M$ the same equation holds up to an
+$O_p(M^{-1/2})$ correction in the right-hand side: both
+$\norm{K^{(M)} - K}_{op}$ and the residual in the Gram-Gram NTK
+factorisation are $O_p(M^{-1/2})$ under standard assumptions
+\citep{jacot2018neural,lee2019wide,yang2020tensor}.
 \end{theorem}
 
 \begin{proof}[Proof sketch]
@@ -320,7 +347,10 @@ $\Gtilde_{ij}(t) = \Gtilde_{ij}(0)$ for all $t$ and all $j$. More
 generally, on any interval $[0, T]$ on which the trajectory satisfies
 the stability condition
 $\norm{\Etilde(s)\Gtilde(s)}_{op}, \norm{\Gtilde(s)\Etilde(s)}_{op} \leq C$
-for all $s \in [0, T]$, every entry $(i,j)$ obeys
+for all $s \in [0, T]$ (which holds for hinged triplet loss whenever
+both $\norm{\Gtilde}_{\!op}$ and the active-triplet count remain
+bounded --- the standard regime; see Appendix~\ref{app:proofs}),
+every entry $(i,j)$ obeys
 \[
 \bigl|\Gtilde_{ij}(T) - \Gtilde_{ij}(0)\bigr|
 \;\leq\; 2T(\lambda_i + \lambda_j)\,C.
@@ -382,7 +412,12 @@ Let $G(t)$ solve the kBM ODE $\dot{G} = -2(K\E G + G\E K)$ with $L \in C^2$.
 Assume:
 \begin{itemize}
 \item[(A1)] $\Gtilde_0$ has diagonal entries
-$\Gtilde_0[i,i] = c_i \lambda_i$ with $c_i \in [c_{\min}, c_{\max}]$,
+$\Gtilde_0[i,i] = c_i \lambda_i$ with $c_i \in [c_{\min}, c_{\max}]$
+($c_{\min}>0$ across the empirically loaded
+frequency range, by the
+arc-cosine-kernel decay rate of \citet{bach2017breaking}; see
+Appendix~\ref{app:proofs}, where we also state the
+finite-$N$ scope of this constant),
 and the total off-diagonal mass is small in Frobenius norm:
 $\norm{\Gtilde_0 - \diag(\Gtilde_0)}_F = O(N^{-1/2})$ (justified by
 Proposition~\ref{prop:align});
@@ -460,8 +495,10 @@ truncated to that subspace.
 \label{cor:gen}
 Let $P_{>r}$ denote orthogonal projection in $K$'s eigenbasis onto the
 eigenspaces with index $> r$. Under the assumptions of
-Theorem~\ref{thm:spectral-refined}, the off-diagonal evolution to leading
-order in $T$ satisfies
+Theorem~\ref{thm:spectral-refined} \emph{and} an additional approximate-
+diagonality assumption on $\Etilde_0$ (an empirically supported but
+unproved structural claim that we do not derive from Funk--Hecke
+alignment), the off-diagonal evolution to leading order in $T$ satisfies
 $|\Gtilde_{ij}(T) - \Gtilde_{ij}(0)| \leq 4 c_{\max} T E_{op}\,\lambda_i \lambda_j + O(T^2) + O(T\,N^{-1/2})$,
 so combining diagonal and off-diagonal mode-wise bounds yields
 \[
