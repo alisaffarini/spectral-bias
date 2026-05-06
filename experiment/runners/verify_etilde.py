@@ -107,7 +107,7 @@ def _compute_E0(Z, labels, triplets, margin):
     return E, active
 
 
-def _diagonality_metrics(E_tilde):
+def _diagonality_metrics(E_tilde, eigvals=None):
     diag = np.diag(E_tilde)
     off = E_tilde - np.diag(diag)
     fro_full = np.linalg.norm(E_tilde, 'fro')
@@ -116,10 +116,9 @@ def _diagonality_metrics(E_tilde):
     diag_frac = (fro_diag ** 2) / (fro_full ** 2 + 1e-30)
     max_diag = float(np.max(np.abs(diag))) if diag.size else 0.0
     max_off = float(np.max(np.abs(off)))
-    # Per-row Cauchy-Schwarz ratio: row-norm vs operator-norm
     row_norms = np.linalg.norm(E_tilde, axis=1)
     op_norm = float(np.linalg.norm(E_tilde, 2))
-    return {
+    out = {
         "diag_frac_fro2": float(diag_frac),
         "off_to_diag_fro_ratio": float(fro_off / (fro_diag + 1e-30)),
         "max_off_over_max_diag": float(max_off / (max_diag + 1e-30)),
@@ -128,6 +127,38 @@ def _diagonality_metrics(E_tilde):
         "op_norm": op_norm,
         "median_row_norm_vs_op_norm": float(np.median(row_norms) / (op_norm + 1e-30)),
     }
+    # === The actual (A3) form Cor 8 needs: |E_tilde[i,j]| <= c_E * lambda_i ===
+    # For each off-diagonal (i,j) with i!=j, compute |E_tilde[i,j]| / lambda_i,
+    # and check whether the maximum is bounded across the spectrum.
+    if eigvals is not None:
+        N = E_tilde.shape[0]
+        lam = np.asarray(eigvals).astype(np.float64)
+        # avoid division by zero / very small lam at the bottom -- cap by a
+        # tiny floor lambda_floor = 1e-3 * lambda_max so we don't spuriously
+        # blow up the ratio for the trailing eigenvalues.
+        lam_floor = max(1e-3 * float(lam.max()), 1e-12)
+        lam_safe = np.maximum(lam, lam_floor)
+        # ratio[i,j] = |E_tilde[i,j]| / lambda_i
+        absE = np.abs(E_tilde)
+        np.fill_diagonal(absE, 0.0)  # only off-diagonals
+        ratio_per_ij = absE / lam_safe[:, None]
+        # Look at this ratio split by row-index quartiles (top/middle/bottom of spectrum)
+        q = np.array_split(np.arange(N), 4)
+        per_quartile = []
+        for k, idx in enumerate(q):
+            sub = ratio_per_ij[idx]
+            per_quartile.append({
+                "quartile": k,
+                "lambda_range": [float(lam[idx[0]]), float(lam[idx[-1]])],
+                "max_ratio": float(np.max(sub)),
+                "mean_ratio": float(np.mean(sub)),
+                "p99_ratio": float(np.percentile(sub, 99)),
+            })
+        out["A3_max_ratio_global"] = float(np.max(ratio_per_ij))
+        out["A3_p99_ratio_global"] = float(np.percentile(ratio_per_ij, 99))
+        out["A3_mean_ratio_global"] = float(np.mean(ratio_per_ij))
+        out["A3_per_quartile"] = per_quartile
+    return out
 
 
 def run_one(seed: int, cfg: EtildeConfig, device: str = "cuda"):
@@ -145,7 +176,7 @@ def run_one(seed: int, cfg: EtildeConfig, device: str = "cuda"):
     print(f"  computing E_0 = dL/dG and projecting to K's eigenbasis...", flush=True)
     E0, n_active = _compute_E0(Z, labels, triplets, cfg.margin)
     E_tilde = U.T @ E0 @ U
-    metrics = _diagonality_metrics(E_tilde)
+    metrics = _diagonality_metrics(E_tilde, eigvals=eigvals)
     metrics["seed"] = seed
     metrics["n_active_triplets"] = n_active
     metrics["n_total_triplets"] = len(triplets)
