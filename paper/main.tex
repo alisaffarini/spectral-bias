@@ -73,42 +73,24 @@ regime where the theory predicts an effect.
 \section{Introduction}
 \label{sec:intro}
 
-Modern retrieval, re-identification, contrastive pre-training, and
-representation-learning pipelines all depend on a metric-learning
-objective trained with stochastic gradient descent --- yet the
-\emph{shape} of the geometry such an objective induces, and in
-particular which directions in feature space are reachable in finite
-training, has no closed-form characterisation. Practitioners cannot
-predict in advance which similarity structures their network will fit;
-when retrieval underperforms on hard negatives or fails under
-adversarial perturbation, there is no theory pointing to a
-principled correction. This paper provides one.
+Wide-network metric learning trains an embedding
+$f_\theta: \R^d \to \R^k$ via a twice-differentiable triplet or
+contrastive loss on the Gram matrix $G = FF^\top$, but no closed-form
+theory describes which similarity geometries the network can actually
+fit in finite training time, and there is no principled correction
+when retrieval underperforms on hard negatives. We provide both. Two
+frameworks bear on this Gram-matrix view: the \emph{neural tangent
+kernel} \citep{jacot2018neural,lee2019wide}, which describes wide
+networks as kernel methods, and the \emph{Burer--Monteiro
+factorization} \citep{burer2003nonlinear,burer2005local}, which
+parameterises a PSD matrix as $UU^\top$ and yields a gradient flow
+$\dot X = -2(EX+XE)$ on $X = UU^\top$. They are usually treated in
+isolation.
 
-Neural metric learning trains an embedding $f_\theta: \R^d \to \R^k$ so that
-$\norm{f_\theta(x) - f_\theta(y)}^2$ encodes a desired similarity geometry.
-The standard recipe is to minimize a triplet or contrastive loss --- a
-twice-differentiable function of the embeddings' pairwise inner products
---- so that the loss depends on $\theta$ only through the Gram matrix
-$G = FF^\top$ of the embeddings. This Gram-matrix view is what makes
-metric learning amenable to two distinct theoretical frameworks that
-otherwise bear on it from very different angles.
-The \emph{neural tangent kernel} \citep{jacot2018neural,lee2019wide} describes
-sufficiently wide networks as kernel methods governed by a fixed kernel
-$\Theta$, and yields linear ODEs for the network's predictions under
-gradient flow. The \emph{Burer--Monteiro factorization}
-\citep{burer2003nonlinear,burer2005local}, central to low-rank semidefinite
-programming, parameterizes a positive semidefinite matrix $X$ as
-$X = UU^\top$ and uses $U$ as the optimization variable; the resulting
-gradient flow on $X$ takes the form $\dot{X} = -2(EX + XE)$.
-
-The two frameworks are usually treated in isolation. We connect them by
-observing that an embedding network with twice-differentiable loss on
-$G = FF^\top$ is itself a Burer--Monteiro factorization, but in the
-non-linear feature space induced by the network rather than the linear
-parameterization $G = UU^\top$ of classical low-rank SDP. The NTK enters
-this picture as an explicit \emph{kernel preconditioner} on the BM
-dynamics. Concretely, in the NTK regime the network's Gram matrix
-evolves according to
+We connect them: an embedding network with a $G$-only loss is
+itself a BM factorisation in the non-linear feature space induced by
+the network, with the NTK acting as an explicit \emph{kernel
+preconditioner} on the BM dynamics. In the NTK regime,
 \begin{equation}
 \label{eq:kbm-intro}
 \dot{G} \;=\; -2\,\bigl(K\,\E\,G + G\,\E\,K\bigr),
@@ -117,50 +99,41 @@ evolves according to
 which reduces to the classical BM flow when $K = I$. We call \eqref{eq:kbm-intro}
 the \emph{kernel-preconditioned Burer--Monteiro} (kBM) flow.
 
-The equivalence is itself a conceptual bridge, but the load-bearing use
-of it is to extract a \emph{spectral implicit bias} that does not follow
-from the NTK ODE alone: in $K$'s eigenbasis, mode-$(i,j)$ evolution is
-multiplied by $\lambda_i + \lambda_j$, and at NTK initialization per-mode
-displacement scales \emph{quadratically} in $\lambda_i$. The trajectory
-of $G(t)$ is therefore confined to $K$'s top eigenspaces on bounded
-training horizons, regardless of where the loss would otherwise push it.
-We verify the slope-$\leq 2$ bound across synthetic data, Fashion-MNIST,
-CIFAR-10, an end-to-end CNN, and a ViT empirical NTK --- including in
-the finite-width CNN and ViT settings where the NTK approximation is
-only nominal --- and derive a one-line $K^{-1}$ correction whose
-regime-of-effect prediction (gain on hard negatives, tie on easy
-retrieval) the data confirm.
+The equivalence is the bridge; the load-bearing use is to extract a
+\emph{spectral implicit bias} that does not follow from the NTK ODE
+alone: in $K$'s eigenbasis the diagonal mode satisfies
+$\dot{\Gtilde}_{ii} = -4 \lambda_i (\Etilde\Gtilde)_{ii}$, and at NTK
+initialisation per-mode displacement scales \emph{quadratically} in
+$\lambda_i$. The trajectory of $G(t)$ is therefore confined to $K$'s
+top eigenspaces on bounded training horizons. We verify the
+slope-$\leq 2$ bound across synthetic data, Fashion-MNIST, CIFAR-10,
+an end-to-end CNN, and a ViT empirical NTK, and derive a one-line
+$K^{-1}$ correction whose regime-of-effect prediction (gain on hard
+negatives, tie on easy retrieval) the data confirm.
 
 \paragraph{Contributions.}
 (i) \emph{kBM equivalence} (Theorems~\ref{thm:kbm}--\ref{thm:depth}):
 single-layer and depth-$L$ ReLU gradient flow on $L(G)$ obeys
-$\dot G = -2(K\E G + G\E K)$, recovering classical BM when $K=I$;
-(ii) \emph{spectral implicit-bias theorems}: a model-free linear-in-$\lambda$
-rate ordering (Theorem~\ref{thm:spectral}) sharpens to a quadratic
-prediction in the NTK regime (Theorem~\ref{thm:spectral-refined});
-(iii) \emph{multi-seed numerical verification} on synthetic data,
-Fashion-MNIST, frozen-feature CIFAR-10, an end-to-end CNN, and a
-ViT empirical NTK (Appendix~\ref{app:vit}), with slopes spanning
-$1.14$--$2.19$ (all~$\leq 2$);
-(iv) \emph{theory-derived correction}: a one-line $K^{-1}$ preconditioner
-flattens the slope across all settings and improves hard-negative
-retrieval with monotone-in-$K$ gains; on CIFAR-10 at
-$N_{\mathrm{train}}\!=\!4000$ ($10$ seeds) it adds $+1.82$/$+2.10$/$+2.17$~pp
-to R@$5$/$10$/$20$ (Bonferroni $p\leq 0.004$ on each) while \emph{tying}
-on easy R@$10$/R@$20$ --- exactly the regime of effect theory predicts.
-The effect attenuates on high-class-count benchmarks where
-bottom-eigenspace gradient signal is dominated by sampling noise
-(Appendices~\ref{app:scaled},~\ref{app:multidataset});
-(v) \emph{practical-robustness corroboration}: the same bottom-eigenmode
-reach widens the embedding-space PGD margin --- across three
-$\ell_\infty$ attack budgets $\varepsilon\!\in\!\{4,8,16\}/255$
-($5$ seeds each), $K^{-1}$ retains
-$4$--$8\times$ adversarial R@$\{5,10,20\}$ relative to vanilla, with
-the margin advantage \emph{not degrading} as $\varepsilon$ grows
-(Appendix~\ref{app:adv});
-(vi) the bias is empirically \emph{distinct from Razin--Cohen rank bias}.
-All results assume the standard isotropic NTK approximation; we do not
-claim a quantitative generalisation bound (Section~\ref{sec:discussion}).
+$\dot G = -2(K\E G + G\E K)$, recovering classical BM when $K=I$.
+(ii) \emph{Spectral implicit-bias theorems}: a model-free
+linear-in-$\lambda$ rate ordering sharpens to a quadratic prediction
+in the NTK regime (Theorems~\ref{thm:spectral}--\ref{thm:spectral-refined}).
+(iii) \emph{Multi-seed numerical verification} across synthetic,
+Fashion-MNIST, frozen-feature CIFAR-10, an end-to-end CNN, and a ViT
+empirical NTK, with slopes spanning $1.14$--$2.19$ (all~$\leq 2$); the
+bias is empirically distinct from Razin--Cohen rank bias
+(Section~\ref{sec:exp-rank-vs-spec}).
+(iv) \emph{Theory-derived correction}: a one-line $K^{-1}$ preconditioner
+flattens the slope across all settings and adds
+$+1.82$/$+2.10$/$+2.17$~pp to R@$5$/$10$/$20$ on CIFAR-10
+$N_{\mathrm{train}}\!=\!4000$ ($10$ seeds, Bonferroni $p\leq 0.004$),
+\emph{tying} on easy R@$10$/R@$20$ --- the regime of effect theory
+predicts. As a downstream corroboration, $K^{-1}$ also retains
+$4$--$8\times$ adversarial R@$\{5,10,20\}$ across PGD budgets
+$\varepsilon\!\in\!\{4,8,16\}/255$ (Appendix~\ref{app:adv}).
+All results assume the standard isotropic NTK approximation; we do
+not claim a quantitative generalisation bound
+(Section~\ref{sec:discussion}).
 
 \section{Related Work}
 \label{sec:related}
@@ -197,61 +170,36 @@ not the rank of $G$ nor the parameter direction; we demonstrate the
 dissociation in Section~\ref{sec:exp-rank-vs-spec}.
 
 \paragraph{NTK eigenvalue dynamics and spectral bias.}
-\citet{bordelon2020spectrum,canatar2021spectral} give mode-wise
-generalisation error for NTK \emph{kernel regression} on scalar
-targets, with rates linear in the kernel eigenvalue.
-\citet{rahaman2019spectral} study Fourier-frequency bias and
-\citet{basri2020frequency} analyse NTK sphere-harmonic decay --- the
-latter sharing our eigenbasis but, again, for the scalar predictor
-with linear-in-$\lambda$ rate. Our object is the \emph{matrix-valued}
-Gram $G$ under triplet loss, and the per-mode bound is
-\emph{quadratic} in $\lambda$: the extra factor of $\lambda$ comes
+\citet{bordelon2020spectrum,canatar2021spectral,basri2020frequency}
+give mode-wise rates for NTK \emph{kernel regression} on
+\emph{scalar} targets, linear in $\lambda_i$. Our object is the
+\emph{matrix-valued} Gram $G$ under triplet loss, with a
+\emph{quadratic}-in-$\lambda$ bound: the extra $\lambda$ factor comes
 from Funk--Hecke alignment of $G_0 = F_0 F_0^\top$ with $K$ at NTK
-initialization (Proposition~\ref{prop:align}) --- a property that
-exists only because the embedding Gram inherits $K$'s spectrum at
-init, which has no scalar analogue. Recent dynamical mean-field
-analyses of feature learning beyond the lazy NTK regime
-\citep{bordelon2023self,bordelon2024dynamical} characterise how the
-NTK \emph{itself} drifts during training; our slope bound is derived
-in the lazy regime where the NTK is fixed, isolating the bias
-contributed by the loss + factorisation.
+init (Proposition~\ref{prop:align}), which has no scalar analogue.
 
 \paragraph{Kernel-spectrum-modifying preconditioners.}
-\citet{bach2017breaking} establishes the canonical eigenvalue-decay
-calibration of arc-cosine NTK kernels on the sphere that grounds our
-slope analysis (Section~\ref{sec:exp-spectral}). The closest
-algorithmic neighbour is \citet{amir2023controlling}, who reweight
-input features to install a prescribed NTK spectrum and thereby
-control the function-space inductive bias of a wide \emph{scalar}
-predictor; their analysis runs through the function-space NTK ODE on
-the residual $\hat f - y$, with no matrix-valued object in scope.
-Our intervention is structurally distinct on three axes: (i)
-\emph{object} --- we precondition $\partial L/\partial F$ in a triplet
-flow on the matrix-valued Gram $G = FF^\top$, not a scalar predictor;
-(ii) \emph{derivation} --- the $K^{-1}$ correction is the canonical
-cancellation of the kBM preconditioner in
-$\dot G = -2(KEG + GEK)$ (Theorem~\ref{thm:kbm}), which has no
-analogue in their function-space setting; (iii) \emph{regime of
-effect} --- we predict and falsify a hard-vs-easy retrieval asymmetry
-tied to $K$'s bottom-eigenspace reach (Section~\ref{sec:exp-cifar}),
-a regime their analysis does not address.
-ScaledGD~\citep{tong2021accelerating} and the over-parameterised
-preconditioned-GD line~\citep{xu2023power} use a factor-side
-preconditioner $(U^\top U)^{-1}$ to remove condition-number dependence
-in low-rank \emph{matrix sensing}; our $K^{-1}$ acts on the
-\emph{NTK feature Gram} of a non-linear network with triplet loss, a
-qualitatively different operation tied to the kBM equivalence rather
-than to ill-conditioning of the iterates. Beyond the conceptual
-distinction, we sweep the natural one-parameter family of
-kernel-spectrum-modifying preconditioners $K^{-\alpha}$ for
-$\alpha \in \{0, \tfrac{1}{2}, 1, 2\}$ (Appendix~\ref{app:alpha}):
-the empirical R@$10$ gain is non-monotone in $\alpha$ with $\alpha\!=\!1$
-uniquely optimal --- exactly the value the kBM derivation predicts.
-This rules out a generic ``any kernel-spectrum modification helps''
-explanation: the data select $K^{-1}$ specifically, not a nearby
-alternative. To our knowledge no prior work derives the primal-Gram
-kBM equivalence or characterises the slope-$\leq 2$ bound for
-matrix-valued NTK dynamics.
+The closest algorithmic neighbour is \citet{amir2023controlling}, who
+reweight input features to install a prescribed NTK spectrum on a
+\emph{scalar} predictor; ours preconditions
+$\partial L / \partial F$ in a triplet flow on the matrix-valued Gram
+$G$, derived as the canonical cancellation of the kBM preconditioner
+in $\dot G = -2(KEG + GEK)$. ScaledGD~\citep{tong2021accelerating}
+and the over-parameterised preconditioned-GD
+line~\citep{xu2023power} use the \emph{factor}-side $(U^\top U)^{-1}$
+to remove condition-number dependence in low-rank matrix sensing;
+$K^{-1}$ acts on the \emph{NTK feature Gram}, addressing spectral
+bias rather than iterate ill-conditioning. As an empirical
+head-to-head with the kernel-spectrum-modifying family, we sweep
+$K^{-\alpha}$ for $\alpha \in \{0, \tfrac{1}{2}, 1, 2\}$
+(Appendix~\ref{app:alpha}): the R@$10$ gain is non-monotone in
+$\alpha$ with $\alpha\!=\!1$ uniquely optimal --- the value the kBM
+derivation predicts.
+\citet{bach2017breaking} establishes the arc-cosine NTK eigenvalue
+decay that grounds our slope analysis. To our knowledge no prior
+work derives the primal-Gram kBM equivalence or the slope-$\leq 2$
+bound for matrix-valued NTK dynamics; an extended axis-by-axis
+comparison is in Appendix~\ref{app:extended-related}.
 
 \paragraph{Metric-learning empirics.}
 \citet{schroff2015facenet,weinberger2009distance,movshovitz2017no,wang2017deep}
@@ -408,15 +356,10 @@ Appendix~\ref{app:proofs}.
 \subsection{From a linear bound to a quadratic prediction}
 \label{sec:refined}
 
-The bound in Theorem~\ref{thm:spectral} is linear in $\lambda_i$. In our
-experiments (Section~\ref{sec:exp-spectral}) the empirical scaling of
-diagonal displacements $|\Gtilde_{ii}(T) - \Gtilde_{ii}(0)|$ is consistently
-\emph{quadratic} in $\lambda_i$ across depths and across both synthetic and
-Fashion-MNIST data. The gap between linear bound and quadratic observation
-is closed by exploiting a structural property of NTK initialization:
-$G_0$ and $K$ share approximate eigenstructure, so $\Gtilde_0$ is
-approximately diagonal in $K$'s eigenbasis with diagonal entries
-proportional to the kernel spectrum.
+The bound in Theorem~\ref{thm:spectral} is linear in $\lambda_i$;
+empirically (Section~\ref{sec:exp-spectral}) the slope is closer to
+$2$. The gap is closed by a structural property of NTK init: $G_0$
+and $K$ share approximate eigenstructure.
 
 \begin{proposition}[Approximate eigen-alignment at NTK init via Funk--Hecke]
 \label{prop:align}
@@ -510,27 +453,12 @@ Plugging these in yields the boxed bound. Full proof:
 Appendix~\ref{app:proofs}.
 \end{proof}
 
-\begin{remark}
-Theorem~\ref{thm:spectral} (linear bound) and
-Theorem~\ref{thm:spectral-refined} (quadratic bound) characterize the same
-phenomenon at different levels of refinement. The linear bound is
-\emph{model-free}: it holds for any kBM flow with bounded gradients,
-regardless of how $G_0$ and $K$ are related. The quadratic bound exploits
-the additional structure of NTK initialization (Proposition~\ref{prop:align}).
-We use the linear bound as the formal statement of the spectral-bias
-phenomenon and the quadratic bound as a sharper prediction within the
-NTK regime; experiments support the quadratic prediction
-(Section~\ref{sec:exp-spectral}).
-\end{remark}
-
-This is a sharper statement than ``the NTK influences training.'' It
-says: the network's trajectory is confined, on any bounded time
-interval, to a neighborhood of its initial state \emph{in the bottom
-eigenspace of $K$}, with the neighborhood size controlled linearly in
-$\lambda_i$ in general (Theorem~\ref{thm:spectral}) and quadratically
-under NTK initialization (Theorem~\ref{thm:spectral-refined}).
-Section~\ref{sec:experiments} verifies this prediction numerically and
-shows that it holds for both networks and the ODE.
+The linear bound is model-free; the quadratic bound exploits the
+additional NTK-init structure of Proposition~\ref{prop:align}.
+Together they confine $G(t)$'s trajectory to a $\lambda$-controlled
+neighbourhood of $G_0$ in $K$'s bottom eigenspace ---
+Section~\ref{sec:experiments} verifies this for both the network and
+the ODE.
 
 \subsection{Generalization implication}
 \label{sec:gen}
@@ -594,25 +522,15 @@ formula for which structures are learnable on bounded horizons.
 
 We organize the experiments around the theorems above. Synthetic
 experiments use unit-norm Gaussian data and triplet loss generated
-uniformly at random (Sections~\ref{sec:exp-equiv},
-\ref{sec:exp-spectral}, \ref{sec:exp-precond},
-\ref{sec:exp-rank-vs-spec}). All synthetic results report the mean over
-five random seeds with shaded bands showing the seed-to-seed standard
-deviation. Networks use the standard NTK parameterisation, the depth-$L$
-NTK is computed via the Jacot recursion, and the kBM ODE is integrated
-with RK4 (full hyperparameters in Appendix~\ref{app:impl}). Code,
-configurations, and raw multi-seed JSON outputs are included as
-supplementary material.
-
-\subsection{Equivalence: network vs.\ kBM ODE}
-\label{sec:exp-equiv}
-
-We initialize a fresh ReLU embedder of depth $L \in \{1,2,3\}$ and width
-$M=1000$, integrate the kBM ODE from the network's $G_0$, and compare.
-Initial Frobenius agreement is at the $10^{-3}$ level and final-epoch
-relative Frobenius error remains below $0.22$ across all six $(N, L)$
-configurations, growing with depth as the NTK approximation loosens
-(full multi-seed trajectories and table in Appendix~\ref{app:equiv-fig}).
+uniformly at random; the kBM ODE matches the network's Gram trajectory
+to relative Frobenius error $<0.22$ across all $(N,L)$ configurations
+(Appendix~\ref{app:equiv-fig}), so we use the two interchangeably.
+Networks use the standard NTK parameterisation, the depth-$L$ NTK
+is computed via the Jacot recursion, and the kBM ODE is integrated
+with RK4. Synthetic results report the mean over $5$ seeds with shaded
+$\pm 1$~std bands. Full hyperparameters are in
+Appendix~\ref{app:impl}; code, configs, and raw JSON outputs are
+included as supplementary material.
 
 \subsection{Spectral implicit bias on synthetic data}
 \label{sec:exp-spectral}
@@ -837,17 +755,13 @@ bias and the kernel-cancellation correction are not artefacts of the
 lazy regime: they survive the most architectural and optimisation drift
 we can introduce.
 
-\subsection{Spectral bias is distinct from rank bias}
+\paragraph{Spectral $\neq$ rank bias.}
 \label{sec:exp-rank-vs-spec}
-
-Tracking effective rank of $G(t)$ alongside spectral displacement
-$\norm{\Gtilde(t)-\Gtilde(0)}_F$ on the same trajectory ($N=50$),
-effective rank stays essentially constant at $\approx 33$ for both
-vanilla and corrected variants while spectral displacement differs by
-orders of magnitude --- so rank-based and spectral characterisations
-respond to different interventions and are not the same phenomenon
-(Appendix~\ref{app:rank-vs-spec}; further rank analyses in
-Appendices~\ref{app:rank-width}--\ref{app:phase}).
+On the same trajectory ($N{=}50$), effective rank of $G(t)$ stays
+essentially constant ($\approx 33$) for vanilla and corrected variants
+while spectral displacement differs by orders of magnitude, dissociating
+the two characterisations (Appendices~\ref{app:rank-vs-spec},
+\ref{app:rank-width}--\ref{app:phase}).
 
 \subsection{Cross-experiment summary}
 \label{sec:exp-summary}
@@ -1049,45 +963,74 @@ analogue of the kBM equivalence.
 \section{Conclusion}
 \label{sec:conclusion}
 
-We characterized NTK-regime neural metric learning as a
-kernel-preconditioned Burer--Monteiro flow on the Gram matrix,
-connecting two lines of theoretical work that have been studied in
-isolation. The foundational implication is that the diagonal-mode
-trajectory of the embedding Gram matrix is constrained by a
-quadratic-in-$\lambda$ displacement law
-(Theorems~\ref{thm:spectral}--\ref{thm:spectral-refined}). We verified
-the slope-$\leq 2$ envelope across $30+$ multi-seed configurations
-spanning synthetic data, Fashion-MNIST, frozen-feature CIFAR-10, an
-end-to-end CNN trained from scratch, and a ViT empirical NTK
-(slope $1.14 \pm 0.07$, Appendix~\ref{app:vit}) --- the prediction
-transfers from MLP through CNN to attention-based feature maps --- and
-confirmed via an empirical-NTK drift study that the envelope persists
-outside the strict-lazy regime (Appendix~\ref{app:drift}). The same
-theorems prescribe a one-line $K^{-1}$ correction with an explicit
-regime of effect: gains on hard-negative retrieval, ties on easy. We
-confirmed this prediction to Bonferroni-corrected significance on
-CIFAR-10 and Fashion-MNIST, strengthened it with a $13\times$ scaled
-$N{=}4000$ replication (Bonferroni $p\!\leq\!0.004$ on
-R@$5$/R@$10$/R@$20$, Appendix~\ref{app:scaled}), documented its
-attenuation with class count across five additional benchmarks
-(Appendix~\ref{app:multidataset}), and ruled out alternative
-explanations via a $K^{-\alpha}$ specificity sweep
-(Appendix~\ref{app:alpha}) and FaceNet-style embedding-space mining
-(Appendix~\ref{app:semihard}). As a downstream practical-robustness
-corroboration of the bottom-eigenmode-reach mechanism, $K^{-1}$ also
-retains $5.7\times$ adversarial Recall@$10$ under PGD
-$\ell_\infty$ $\varepsilon\!=\!8/255$ (Appendix~\ref{app:adv}). The
-kBM viewpoint thereby identifies a \emph{constructive, falsifiable,
-and prescriptive} handle on the implicit hypothesis class of
-wide-network metric learning --- a combination that distinguishes it
-from descriptive rank- and margin-bias characterisations and points to
-a methodological pattern applicable beyond metric learning to any
-Gram-matrix loss in the NTK feature space.
+We characterised NTK-regime neural metric learning as a
+kernel-preconditioned Burer--Monteiro flow on the Gram matrix, with
+diagonal-mode trajectories constrained by a quadratic-in-$\lambda$
+displacement law (Theorems~\ref{thm:spectral}--\ref{thm:spectral-refined}).
+The slope-$\leq 2$ envelope is verified across $30+$ multi-seed
+configurations spanning synthetic, Fashion-MNIST, CIFAR-10, end-to-end
+CNN, and a ViT empirical NTK (slope $1.14 \pm 0.07$). The same
+theorems prescribe a one-line $K^{-1}$ correction whose regime of
+effect (gain on hard, tie on easy) is confirmed to Bonferroni
+significance at $N{=}300$ and again at the $13\times$-scaled
+$N{=}4000$ ($p\!\leq\!0.004$ on R@$5$/R@$10$/R@$20$); the same
+mechanism corroborates as a $4$--$8\times$ adversarial-recall
+retention advantage across PGD budgets. The kBM viewpoint identifies
+a \emph{constructive, falsifiable, and prescriptive} handle on the
+implicit hypothesis class of wide-network metric learning, applicable
+in principle to any Gram-matrix loss in the NTK feature space.
 
 \bibliographystyle{plainnat}
 \bibliography{refs}
 
 \appendix
+
+\section{Extended related work}
+\label{app:extended-related}
+
+This appendix expands the four relevant prior-art families against
+which the kBM result is positioned, complementing the compressed
+discussion in Section~\ref{sec:related}.
+
+\paragraph{Amir et al.\ (2023).} \citet{amir2023controlling} reweight
+input features to install a prescribed NTK spectrum, controlling the
+function-space inductive bias of a wide \emph{scalar} predictor; their
+analysis runs through the function-space NTK ODE on the residual
+$\hat f - y$. Three-axis distinction from this work: (i) \emph{object}
+--- we precondition $\partial L/\partial F$ in a triplet flow on the
+matrix-valued Gram $G = FF^\top$, not a scalar predictor; (ii)
+\emph{derivation} --- $K^{-1}$ is the canonical cancellation of the
+kBM preconditioner in $\dot G = -2(KEG + GEK)$
+(Theorem~\ref{thm:kbm}), which has no analogue in their function-space
+setting; (iii) \emph{regime of effect} --- we predict and falsify a
+hard-vs-easy retrieval asymmetry tied to $K$'s bottom-eigenspace
+reach, a regime their analysis does not address.
+
+\paragraph{ScaledGD line.}
+\citet{tong2021accelerating,xu2023power} use the \emph{factor}-side
+preconditioner $(U^\top U)^{-1}$ to remove condition-number dependence
+in low-rank \emph{matrix sensing} with a known linear measurement
+operator. $K^{-1}$ acts on the \emph{NTK feature Gram} of a non-linear
+network with triplet loss, addressing spectral bias rather than
+iterate ill-conditioning.
+
+\paragraph{Bordelon-Pehlevan dynamical mean-field theory.}
+\citet{bordelon2023self,bordelon2024dynamical} characterise how the
+NTK \emph{itself} drifts in the feature-learning regime. Our slope
+bound is derived in the lazy regime where the NTK is fixed,
+isolating the bias contributed by the loss + factorisation; the
+empirical-NTK drift study (Appendix~\ref{app:drift}) shows the
+slope-$\leq 2$ envelope persists when the NTK is recomputed at
+training checkpoints, suggesting the bound is not strictly limited to
+the lazy regime in practice.
+
+\paragraph{Razin--Cohen rank bias.}
+\citet{razin2020implicit} characterise an implicit \emph{rank} bias
+in matrix factorisation; we dissociate spectrum from rank empirically
+in Section~\ref{sec:exp-rank-vs-spec} and
+Appendix~\ref{app:rank-vs-spec}: effective rank stays essentially
+constant across training while spectral displacement varies by
+orders of magnitude.
 
 \section{Proofs}
 \label{app:proofs}
