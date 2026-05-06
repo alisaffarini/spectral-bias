@@ -430,12 +430,11 @@ and combining (A1) and (A2) via Cauchy--Schwarz gives
 \;}
 \]
 The leading term scales as $\lambda_i^{\,2}$, matching the empirical
-power-law slope $\leq 2$ observed in
-Section~\ref{sec:exp-spectral}. The bound is stated to leading order in
-$T$; the $O(T^2)$ remainder is controlled by Gr\"onwall on the
-quadratic-in-$\Gtilde$ ODE under (A2)
-(Appendix~\ref{app:proofs}), so the slope-$\leq 2$ envelope persists
-over the integrated training horizon, not only at $T \to 0^+$.
+power-law slope $\leq 2$ observed in Section~\ref{sec:exp-spectral}.
+A Gr\"onwall lemma (Appendix~\ref{app:gronwall}) establishes that the
+$O(T^2)$ remainder constant is uniform in $T$, so the slope-$\leq 2$
+envelope persists over the integrated training horizon, not only at
+$T \to 0^+$.
 \end{theorem}
 
 \begin{proof}[Proof sketch]
@@ -797,27 +796,27 @@ Prediction & Dataset / arch. & Seeds & Result & Ref.\\
 \multicolumn{5}{l}{\emph{Spectral implicit bias: slope-$\le 2$ on $\log|\Gtilde_{ii}-\Gtilde_{ii}(0)|$ vs $\log\lambda_i$}}\\
 \midrule
 Synthetic, depth-1 FCN, $N\!=\!300$  & Synthetic / FCN  & 5  & slope $1.60\pm 0.05$ (Fig.~\ref{fig:spectral}) & \S\ref{sec:exp-spectral}\\
-Bound check across $N$               & Synthetic / FCN  & 5  & slope settles to $1.32$ at $N\!=\!3000$  & App.~\ref{app:bound}\\
-Fashion-MNIST                        & FMNIST / FCN     & 5  & slope $1.69\pm 0.03$              & App.~\ref{app:fashion}\\
+Bound check across $N$               & Synthetic / FCN  & 5  & slope settles to $1.32$ at $N\!=\!3000$ (Fig.~\ref{fig:bound}) & App.~\ref{app:bound}\\
+Fashion-MNIST                        & FMNIST / FCN     & 5  & slope $1.69\pm 0.03$ (Fig.~\ref{fig:fashion}) & App.~\ref{app:fashion}\\
 End-to-end CNN, empirical $K$        & CIFAR-10 / CNN   & 5  & vanilla $1.15\pm 0.07$, precond $0.97\pm 0.11$ & \S\ref{sec:exp-end2end}\\
-NTK drift across training            & CIFAR-10 / CNN   & 3  & slope $1.10$--$1.28$ throughout training & App.~\ref{app:drift}\\
-\textbf{ViT empirical NTK}           & CIFAR-10 / ViT-Tiny & 3 & \textbf{slope $1.14\pm 0.07$ (transfers to attention)} & App.~\ref{app:vit}\\
+NTK drift across training            & CIFAR-10 / CNN   & 3  & slope $1.10$--$1.28$ throughout training (Tab.~\ref{tab:drift}) & App.~\ref{app:drift}\\
+\textbf{ViT empirical NTK}           & CIFAR-10 / ViT-Tiny & 3 & \textbf{slope $1.14\pm 0.07$ (transfers to attention; Tab.~\ref{tab:vit})} & App.~\ref{app:vit}\\
 \midrule
 \multicolumn{5}{l}{\emph{Asymmetric retrieval: $\Delta_{\mathrm{hard}}\!>\!\Delta_{\mathrm{easy}}$ on Recall@$K$}}\\
 \midrule
 CIFAR-10, $N\!=\!300$                & CIFAR-10        & 10 & 3 Bonf-sig. hard R@$K$ gains, easy ties & \S\ref{sec:exp-cifar}\\
-Fashion-MNIST, $N\!=\!300$           & FMNIST          & 10 & 3 Bonf-sig. hard R@$K$ gains, easy ties & App.~\ref{app:fashion-recall}\\
-Six fine-grained datasets            & multidataset    & 5  & $\Delta_{\mathrm{hard}}\!>\!\Delta_{\mathrm{easy}}$ on every dataset & App.~\ref{app:multidataset}\\
-Semi-hard (FaceNet) mining           & CIFAR-10        & 5  & gain replicates with embedding-space hardness & App.~\ref{app:semihard}\\
+Fashion-MNIST, $N\!=\!300$           & FMNIST          & 10 & 3 Bonf-sig. hard R@$K$ gains, easy ties (Tab.~\ref{tab:recall-fashion}) & App.~\ref{app:fashion-recall}\\
+Multidataset sweep (7 benchmarks)    & 10--200 classes & 5--10 & $\Delta_{\mathrm{hard}}\!>\!\Delta_{\mathrm{easy}}$ on every dataset; 4 with Bonf-sig.\ hard gains (Tab.~\ref{tab:cross-dataset}) & App.~\ref{app:multidataset}\\
+Semi-hard (FaceNet) mining           & CIFAR-10        & 5  & gain replicates with embedding-space hardness (Tab.~\ref{tab:recall-semihard}) & App.~\ref{app:semihard}\\
 \textbf{Scaled CIFAR-10, $N\!=\!4000$} & CIFAR-10 / ResNet-50 & 10 & \textbf{hard $+1.82$/$+2.10$/$+2.17$ pp R@5/10/20 (all Bonf $p\!\le\!0.004$); easy ties} & App.~\ref{app:scaled}\\
 \midrule
 \multicolumn{5}{l}{\emph{Adversarial robustness: bottom-eigenmode reach $\Rightarrow$ embedding-space margin}}\\
 \midrule
-\textbf{PGD-$\ell_\infty$, $\varepsilon\!=\!8/255$} & CIFAR-10 / ResNet-18 & 5 & \textbf{$5.7\!\times$ adv R@10, $4.3\!\times$ adv R@20 vs vanilla} & App.~\ref{app:adv}\\
+\textbf{PGD-$\ell_\infty$, $\varepsilon\!\in\!\{4,8,16\}/255$} & CIFAR-10 / ResNet-18 & 5 & \textbf{$4$--$8\times$ adv R@$\{5,10,20\}$ vs vanilla, no degradation as $\varepsilon$ grows (Tabs.~\ref{tab:adv},~\ref{tab:adv-sweep})} & App.~\ref{app:adv}\\
 \midrule
 \multicolumn{5}{l}{\emph{$K$-spectrum specificity ($K^{-\alpha}$ sweep)}}\\
 \midrule
-$\alpha\!\in\!\{0,\tfrac{1}{2},1,2\}$ & CIFAR-10        & 5  & non-monotone U-shape; $\alpha\!=\!1$ optimal & App.~\ref{app:alpha}\\
+$\alpha\!\in\!\{0,\tfrac{1}{2},1,2\}$ & CIFAR-10        & 5  & non-monotone U-shape; $\alpha\!=\!1$ optimal (Fig.~\ref{fig:alpha}) & App.~\ref{app:alpha}\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1655,6 +1654,38 @@ $\dagger$~Pet baseline saturates retrieval (vanilla R@$5 = 98.4\%$,
 R@$10 = 99.3\%$), so any effect is bounded by the headroom; the
 asymmetric prediction is not testable in this regime.
 
+\begin{table}[!htbp]
+\centering
+\small
+\caption{Easy-mining companion to Table~\ref{tab:cross-dataset}, same
+seven datasets and protocol. The asymmetric prediction ``no gain on
+easy'' holds at moderate class counts (CIFAR-10, FMNIST, Pet) and
+attenuates / flips negative on the high-class-count fine-grained
+benchmarks --- the same noise-amplification regime that produces the
+small easy-R@$\{1,5\}$ negatives in the scaled $N{=}4000$ run
+(Table~\ref{tab:scaled}). The strict ``ties'' prediction is therefore
+partially contradicted in the high-class-count regime; the
+\emph{net} asymmetry $\Delta_{\mathrm{hard}}>\Delta_{\mathrm{easy}}$
+holds on every dataset.}
+\label{tab:cross-dataset-easy}
+\begin{tabular}{lccccc}
+\toprule
+Dataset & \#classes & seeds & $\Delta$R@$5$ & $\Delta$R@$10$ & $\Delta$R@$20$ \\
+\midrule
+\multicolumn{6}{l}{\emph{Demonstration regime} (10 classes):} \\
+CIFAR-10        &  10 & 10 & $+0.6$ & $+0.2$ & $+0.5$ \\
+Fashion-MNIST   &  10 & 10 & $+0.3$ & $-0.1$ & $+0.4$ \\
+\midrule
+\multicolumn{6}{l}{\emph{Stress-test regime} (high-class-count fine-grained):} \\
+Oxford-IIIT Pet &  37 &  5 & $-0.1$ & $+0.1$ & $+0.1$ \\
+FGVC-Aircraft   & 100 &  5 & $-1.1$ & $\mathbf{-2.7}$ & $-1.8$ \\
+CIFAR-100       & 100 &  5 & $-0.6$ & $\mathbf{-2.7}$ & $-0.5$ \\
+Flowers-102     & 102 &  5 & $+0.2$ & $-1.0$ & $-0.3$ \\
+CUB-200         & 200 &  5 & $+0.2$ & $-0.3$ & $-0.5$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{Summary across the seven benchmarks.}
 The asymmetric prediction (gain on hard, no gain on easy) holds
 \emph{robustly} on the demonstration regime: CIFAR-10 and Fashion-MNIST
@@ -1671,8 +1702,9 @@ on every one. The strict ``easy ties'' prediction is partially
 contradicted at high class counts, where K$^{-1}$ amplifies
 bottom-eigenspace noise (small per-class sample counts make the
 bottom-spectrum signal more noise-dominated) and slightly hurts
-easy-retrieval R@$10$ ($-2.7$~pp on Aircraft, $-2.7$~pp on CIFAR-100,
-$-1.0$~pp on Flowers). Effect-size attenuation with class count is a
+easy-retrieval R@$10$ on three of the five fine-grained benchmarks
+(Table~\ref{tab:cross-dataset-easy}: $-2.7$~pp on Aircraft,
+$-2.7$~pp on CIFAR-100, $-1.0$~pp on Flowers). Effect-size attenuation with class count is a
 real regime-of-effect characterisation: the K$^{-1}$ correction is
 most useful when the bottom-eigenspace contains discriminating signal
 rather than sampling noise.
@@ -1795,7 +1827,7 @@ $t$-statistic and Bonferroni-corrected $p$ value across $4$ R@$K$
 endpoints reported for the precond--vanilla difference. \textbf{Hard
 mining: $K^{-1}$ delivers Bonferroni-significant gains at every $K\geq 5$,
 with effect sizes (\textbf{+1.82}, \textbf{+2.10}, \textbf{+2.17} pp at
-R@5/R@10/R@20) roughly twice the main-paper $N=300$ result. Easy
+R@5/R@10/R@20). Easy
 mining: tied at R@10/R@20 (deltas $+0.03$ / $+0.18$ pp, both
 NS).} The asymmetric prediction
 $\Delta_{\mathrm{hard}}\gg\Delta_{\mathrm{easy}}$ holds at every $K$.}
@@ -1822,15 +1854,19 @@ $\Delta_{\mathrm{hard}}\gg\Delta_{\mathrm{easy}}$ holds at every $K$.}
 \end{tabular}
 \end{table}
 
-Hard-mining gains are roughly $2\times$ the main-paper $N=300$ effect,
-exactly as predicted: more bottom-eigenspace gradient signal yields a
-bigger benefit from $K^{-1}$ preconditioning. The small negative
-$\Delta$ at easy R@$1$ is consistent with the noise-amplification
-caveat at the tightest measure (Section~\ref{sec:discussion}). The
-asymmetry $\Delta_{\mathrm{hard}}-\Delta_{\mathrm{easy}}$ is positive
-at every $K$ and substantial ($\approx +2$~pp) at
-$K\in\{5,10,20\}$, locking in the asymmetric retrieval signature at a
-$13\times$ larger training-set size than the main paper.
+Hard-mining gains at $N{=}4000$ are smaller per-pp than the
+main-paper $N{=}300$ result ($+1.82$--$+2.17$ vs $+2.5$--$+3.5$~pp)
+because the ResNet-$50$ vanilla baseline is stronger at this scale
+(vanilla R@$10$ rises from $0.915$ at $N{=}300$ to $0.930$ at
+$N{=}4000$, leaving less head-room), but the gains remain
+Bonferroni-significant at $p\!\le\!0.004$ on every R@$K\!\geq\!5$.
+The small negative $\Delta$ at easy R@$1$ is consistent with the
+noise-amplification caveat at the tightest measure
+(Section~\ref{sec:discussion}). The asymmetry
+$\Delta_{\mathrm{hard}}-\Delta_{\mathrm{easy}}$ is positive at every
+$K$ and substantial ($\approx +2$~pp) at $K\in\{5,10,20\}$, locking
+in the asymmetric retrieval signature at a $13\times$ larger
+training-set size than the main paper.
 
 \section{Adversarial robustness of $K^{-1}$-trained retrieval}
 \label{app:adv}
@@ -1923,7 +1959,8 @@ $\E_0 = \partial L/\partial G$ at initialization for the standard
 hard-mining hinge triplet loss with $12{,}000$ triplets, project into
 $K$'s eigenbasis as $\Etilde_0 = U^\top \E_0 U$, and report the
 per-entry ratio $|(\Etilde_0)_{ij}|/\lambda_i$ for off-diagonal
-$(i,j)$, broken into eigenvalue quartiles of the spectrum.
+$(i,j)$, broken into eigenvalue quartiles of the spectrum
+(Table~\ref{tab:etilde}).
 
 \begin{table}[!htbp]
 \centering
@@ -1990,7 +2027,7 @@ $s = 1.69 \pm 0.03$.}
 \section{Equivalence experiment: full details}
 \label{app:equiv-fig}
 
-We complement Section~\ref{sec:exp-equiv} with the full multi-seed
+We complement the equivalence statement in Section~\ref{sec:experiments} with the full multi-seed
 trajectory (Figure~\ref{fig:equiv}) and the final-epoch error table
 (Table~\ref{tab:equivalence}). Initial Frobenius agreement between
 network and ODE is at the $10^{-3}$ level for all six configurations
@@ -2033,7 +2070,7 @@ We track the effective rank of $G(t)$ and the spectral displacement
 $\norm{\Gtilde(t)-\Gtilde(0)}_F$ on the same trajectory ($N=50$, $400$
 triplets). The effective rank is essentially constant at $\approx 33$
 throughout training for both vanilla and preconditioned variants, while
-the spectral displacement differs sharply.
+the spectral displacement differs sharply (Figure~\ref{fig:rank-vs-spec}).
 
 \begin{figure}[!htbp]
 \centering
@@ -2067,9 +2104,10 @@ capacity-limited; for $M \geq N$ the network learns rank exactly $N$.}
 Adding $\lambda\norm{G}_*$ to the objective drives the rank down at large
 $\lambda$. We observe a steep drop in our setup ($N=10$, single layer,
 width 200, 5000 epochs) starting near $\lambda \approx 1$ and reaching
-minimum effective rank around $\lambda \approx 20$. The location is
-seed-dependent at the tens-of-percent level, so we report this as an
-empirical observation rather than a theoretical prediction.
+minimum effective rank around $\lambda \approx 20$
+(Figure~\ref{fig:phase}). The location is seed-dependent at the
+tens-of-percent level, so we report this as an empirical observation
+rather than a theoretical prediction.
 
 \begin{figure}[!htbp]
 \centering
