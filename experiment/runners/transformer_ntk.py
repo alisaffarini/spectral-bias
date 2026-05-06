@@ -64,17 +64,32 @@ class ViTNTKConfig:
     eps: float = 1e-2
     data_root: str = "./data"
     n_seeds: int = 3
+    dataset: str = "cifar10"
+    eps_relative_to_lambda_max: float = 0.0  # if > 0, use eps = this * lambda_max
 
 
-def _load_cifar10(cfg: ViTNTKConfig, seed: int):
+def _load_dataset(cfg: ViTNTKConfig, seed: int, dataset: str = "cifar10"):
     rng = np.random.default_rng(seed)
-    tfm = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225]),
-    ])
-    ds = torchvision.datasets.CIFAR10(cfg.data_root, train=True, download=True, transform=tfm)
-    targets = np.array(ds.targets)
+    if dataset == "cifar10":
+        tfm = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225]),
+        ])
+        ds = torchvision.datasets.CIFAR10(cfg.data_root, train=True, download=True, transform=tfm)
+        targets = np.array(ds.targets)
+    elif dataset == "fmnist":
+        # Fashion-MNIST: 28x28 grayscale, 10 classes. Pad to 32x32 RGB-broadcast for ViT compat.
+        tfm = transforms.Compose([
+            transforms.Resize(32),
+            transforms.Grayscale(num_output_channels=3),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        ])
+        ds = torchvision.datasets.FashionMNIST(cfg.data_root, train=True, download=True, transform=tfm)
+        targets = np.array(ds.targets)
+    else:
+        raise ValueError(f"unknown dataset {dataset}")
     per_class = cfg.N // cfg.n_classes
     idxs, labels = [], []
     for c in range(cfg.n_classes):
@@ -84,6 +99,10 @@ def _load_cifar10(cfg: ViTNTKConfig, seed: int):
         labels.extend([c] * per_class)
     images = torch.stack([ds[i][0] for i in idxs])
     return images, np.array(labels)
+
+
+def _load_cifar10(cfg: ViTNTKConfig, seed: int):
+    return _load_dataset(cfg, seed, "cifar10")
 
 
 def _make_triplets(labels, n_triplets, seed):
@@ -133,7 +152,14 @@ def _train(model, X, triplets, cfg, device, K=None):
 
     if K is not None:
         K_t = torch.as_tensor(K, dtype=torch.float32, device=device)
-        K_inv = torch.linalg.solve(K_t + cfg.eps * torch.eye(K_t.shape[0], device=device),
+        # Use spectrum-relative eps if configured (defends against very wide spectra
+        # like the ViT empirical NTK where lambda_min ~ 1e-2 vs lambda_max ~ 1e4).
+        if cfg.eps_relative_to_lambda_max > 0:
+            lam_max = float(torch.linalg.eigvalsh(K_t).max())
+            eff_eps = cfg.eps_relative_to_lambda_max * lam_max
+        else:
+            eff_eps = cfg.eps
+        K_inv = torch.linalg.solve(K_t + eff_eps * torch.eye(K_t.shape[0], device=device),
                                    torch.eye(K_t.shape[0], device=device))
     else:
         K_inv = None
@@ -171,7 +197,7 @@ def _train(model, X, triplets, cfg, device, K=None):
 
 def run_one(seed: int, cfg: ViTNTKConfig, device: str = "cuda") -> dict:
     torch.manual_seed(seed); np.random.seed(seed)
-    X, labels = _load_cifar10(cfg, seed)
+    X, labels = _load_dataset(cfg, seed, cfg.dataset)
     triplets = _make_triplets(labels, cfg.n_triplets, seed)
 
     torch.manual_seed(seed); np.random.seed(seed)

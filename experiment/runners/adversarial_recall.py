@@ -46,9 +46,10 @@ class AdvRecallConfig:
     Ks: tuple[int, ...] = (1, 5, 10, 20)
     data_root: str = "./data"
     triplet_difficulty: str = "hard"
-    pgd_eps: float = 8.0 / 255.0     # standard L_inf budget
+    pgd_eps: float = 8.0 / 255.0
     pgd_alpha: float = 2.0 / 255.0
     pgd_steps: int = 10
+    dataset: str = "cifar10"
 
 
 def _resnet18(device):
@@ -64,21 +65,35 @@ def _features(images, model, device):
 
 
 def _load_cifar10_imgs(cfg: AdvRecallConfig, seed: int):
-    """Fast loader: pull selected indices from CIFAR-10's underlying
-    numpy array (avoids the PIL per-image path), then resize as a single
-    batched torch op."""
+    """Fast loader: pull selected indices from the underlying numpy array
+    (avoids the PIL per-image path), then resize as a single batched torch op.
+    Supports both CIFAR-10 and Fashion-MNIST via cfg.dataset."""
     rng = np.random.default_rng(seed)
-    ds = torchvision.datasets.CIFAR10(cfg.data_root, train=True, download=True)
-    targets = np.array(ds.targets)
-    per_class = (cfg.N_train + cfg.N_test) // cfg.n_classes
-    idxs, labels = [], []
-    for c in range(cfg.n_classes):
-        cand = np.where(targets == c)[0]
-        chosen = rng.choice(cand, size=per_class, replace=False)
-        idxs.extend(chosen.tolist())
-        labels.extend([c] * per_class)
-    arr = ds.data[np.asarray(idxs)]                              # (B, 32, 32, 3) uint8
-    t = torch.from_numpy(arr).permute(0, 3, 1, 2).float() / 255.0  # (B, 3, 32, 32)
+    if cfg.dataset == "cifar10":
+        ds = torchvision.datasets.CIFAR10(cfg.data_root, train=True, download=True)
+        targets = np.array(ds.targets)
+        per_class = (cfg.N_train + cfg.N_test) // cfg.n_classes
+        idxs, labels = [], []
+        for c in range(cfg.n_classes):
+            cand = np.where(targets == c)[0]
+            chosen = rng.choice(cand, size=per_class, replace=False)
+            idxs.extend(chosen.tolist()); labels.extend([c] * per_class)
+        arr = ds.data[np.asarray(idxs)]                                   # (B,32,32,3) uint8
+        t = torch.from_numpy(arr).permute(0, 3, 1, 2).float() / 255.0      # (B,3,32,32)
+    elif cfg.dataset == "fmnist":
+        ds = torchvision.datasets.FashionMNIST(cfg.data_root, train=True, download=True)
+        targets = np.array(ds.targets)
+        per_class = (cfg.N_train + cfg.N_test) // cfg.n_classes
+        idxs, labels = [], []
+        for c in range(cfg.n_classes):
+            cand = np.where(targets == c)[0]
+            chosen = rng.choice(cand, size=per_class, replace=False)
+            idxs.extend(chosen.tolist()); labels.extend([c] * per_class)
+        arr = ds.data[np.asarray(idxs)].numpy()                            # (B,28,28) uint8
+        t = torch.from_numpy(arr).unsqueeze(1).float() / 255.0             # (B,1,28,28)
+        t = t.repeat(1, 3, 1, 1)                                           # (B,3,28,28)
+    else:
+        raise ValueError(f"unknown dataset {cfg.dataset}")
     images = torch.nn.functional.interpolate(t, size=224, mode="bilinear", align_corners=False)
     return images, np.array(labels)
 
