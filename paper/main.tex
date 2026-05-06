@@ -197,23 +197,24 @@ not the rank of $G$ nor the parameter direction; we demonstrate the
 dissociation in Section~\ref{sec:exp-rank-vs-spec}.
 
 \paragraph{NTK eigenvalue dynamics and spectral bias.}
-\citet{bordelon2020spectrum,canatar2021spectral} characterise mode-wise
-generalisation error in NTK \emph{kernel regression} on scalar targets,
-showing rates linear in the kernel eigenvalue. Our object is the
-\emph{matrix-valued} Gram matrix $G$ under triplet loss, and our
-dynamics yield a \emph{quadratic} per-mode displacement upper-bound:
-the extra factor of $\lambda$ comes from the Funk--Hecke alignment
-between $G_0$ and $K$ at NTK initialization
-(Proposition~\ref{prop:align}), which has no analog in scalar
-regression. \citet{rahaman2019spectral} study Fourier-frequency bias in scalar
-regression; \citet{basri2020frequency} analyse NTK sphere-harmonic
-decay for scalar targets in the same eigenbasis we use, but for the
-\emph{scalar} predictor with a linear-in-$\lambda$ rate. Our object
-is the matrix-valued Gram $G$ under triplet loss, where the bound is
-\emph{quadratic} per mode --- the extra factor of $\lambda$ comes
-from the Funk--Hecke alignment between $G_0$ and $K$ at NTK
-initialization (Proposition~\ref{prop:align}), which has no analog
-when the target is scalar.
+\citet{bordelon2020spectrum,canatar2021spectral} give mode-wise
+generalisation error for NTK \emph{kernel regression} on scalar
+targets, with rates linear in the kernel eigenvalue.
+\citet{rahaman2019spectral} study Fourier-frequency bias and
+\citet{basri2020frequency} analyse NTK sphere-harmonic decay --- the
+latter sharing our eigenbasis but, again, for the scalar predictor
+with linear-in-$\lambda$ rate. Our object is the \emph{matrix-valued}
+Gram $G$ under triplet loss, and the per-mode bound is
+\emph{quadratic} in $\lambda$: the extra factor of $\lambda$ comes
+from Funk--Hecke alignment of $G_0 = F_0 F_0^\top$ with $K$ at NTK
+initialization (Proposition~\ref{prop:align}) --- a property that
+exists only because the embedding Gram inherits $K$'s spectrum at
+init, which has no scalar analogue. Recent dynamical mean-field
+analyses of feature learning beyond the lazy NTK regime
+\citep{bordelon2023self,bordelon2024dynamical} characterise how the
+NTK \emph{itself} drifts during training; our slope bound is derived
+in the lazy regime where the NTK is fixed, isolating the bias
+contributed by the loss + factorisation.
 
 \paragraph{Kernel-spectrum-modifying preconditioners.}
 \citet{bach2017breaking} establishes the canonical eigenvalue-decay
@@ -240,19 +241,17 @@ preconditioner $(U^\top U)^{-1}$ to remove condition-number dependence
 in low-rank \emph{matrix sensing}; our $K^{-1}$ acts on the
 \emph{NTK feature Gram} of a non-linear network with triplet loss, a
 qualitatively different operation tied to the kBM equivalence rather
-than to ill-conditioning of the iterates.
-Their goal is to use the modified spectrum to enforce a desired
-function-space prior; ours is to cancel an existing primal-Gram-matrix
-spectral bias derived from the kBM equivalence. The two interventions
-both apply a kernel-dependent preconditioner to the gradient, but
-operate on different objects (their scalar predictor vs.\ our Gram
-matrix), under different theoretical analyses (their function-space
-spectral-bias modification vs.\ our matrix-valued kBM flow), and target
-different regimes of effect (their feature-imposition for arbitrary
-priors vs.\ our hard-negative bottom-eigenspace recovery for metric
-learning). To our knowledge no prior work derives the primal-Gram kBM
-equivalence or characterises the slope-$\leq 2$ bound for matrix-valued
-NTK dynamics.
+than to ill-conditioning of the iterates. Beyond the conceptual
+distinction, we sweep the natural one-parameter family of
+kernel-spectrum-modifying preconditioners $K^{-\alpha}$ for
+$\alpha \in \{0, \tfrac{1}{2}, 1, 2\}$ (Appendix~\ref{app:alpha}):
+the empirical R@$10$ gain is non-monotone in $\alpha$ with $\alpha\!=\!1$
+uniquely optimal --- exactly the value the kBM derivation predicts.
+This rules out a generic ``any kernel-spectrum modification helps''
+explanation: the data select $K^{-1}$ specifically, not a nearby
+alternative. To our knowledge no prior work derives the primal-Gram
+kBM equivalence or characterises the slope-$\leq 2$ bound for
+matrix-valued NTK dynamics.
 
 \paragraph{Metric-learning empirics.}
 \citet{schroff2015facenet,weinberger2009distance,movshovitz2017no,wang2017deep}
