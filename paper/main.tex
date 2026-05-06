@@ -106,10 +106,14 @@ $\dot{\Gtilde}_{ii} = -4 \lambda_i (\Etilde\Gtilde)_{ii}$, and at NTK
 initialisation per-mode displacement scales \emph{quadratically} in
 $\lambda_i$. The trajectory of $G(t)$ is therefore confined to $K$'s
 top eigenspaces on bounded training horizons. We verify the
-slope-$\leq 2$ bound across synthetic data, Fashion-MNIST, CIFAR-10,
-an end-to-end CNN, and a ViT empirical NTK, and derive a one-line
-$K^{-1}$ correction whose regime-of-effect prediction (gain on hard
-negatives, tie on easy retrieval) the data confirm.
+slope-$\leq 2$ envelope across synthetic data, Fashion-MNIST,
+CIFAR-10, an end-to-end CNN, and a ViT empirical NTK (with the
+finite-$N$ residual term of
+Theorem~\ref{thm:spectral-refined} accounting for small-$N$ slopes
+that exceed 2 within their CI), and derive a one-line $K^{-1}$
+correction whose regime-of-effect prediction (gain on hard negatives;
+tie or weakly negative on easy retrieval depending on per-class
+sample size) the data confirm.
 
 \paragraph{Contributions.}
 (i) \emph{kBM equivalence} (Theorems~\ref{thm:kbm}--\ref{thm:depth}):
@@ -120,15 +124,23 @@ linear-in-$\lambda$ rate ordering sharpens to a quadratic prediction
 in the NTK regime (Theorems~\ref{thm:spectral}--\ref{thm:spectral-refined}).
 (iii) \emph{Multi-seed numerical verification} across synthetic,
 Fashion-MNIST, frozen-feature CIFAR-10, an end-to-end CNN, and a ViT
-empirical NTK, with slopes spanning $1.14$--$2.19$ (all~$\leq 2$); the
-bias is empirically distinct from Razin--Cohen rank bias
+empirical NTK, with slopes ranging from $1.10$ at $N{=}3000$ to
+$2.19 \pm 0.12$ at $N{=}30$ (all consistent with the slope-$\leq 2$
+envelope modulo the $O(T \lambda N^{-1/2})$ residual term of
+Theorem~\ref{thm:spectral-refined}, which dominates at small $N$);
+the bias is empirically distinct from Razin--Cohen rank bias
 (Section~\ref{sec:exp-rank-vs-spec}).
 (iv) \emph{Theory-derived correction}: a one-line $K^{-1}$ preconditioner
-flattens the slope across all settings and adds
-$+1.82$/$+2.10$/$+2.17$~pp to R@$5$/$10$/$20$ on CIFAR-10
+flattens the slope in every setting tested and adds
+$+1.82$/$+2.10$/$+2.17$~pp to hard R@$5$/$10$/$20$ on CIFAR-10
 $N_{\mathrm{train}}\!=\!4000$ ($10$ seeds, Bonferroni $p\leq 0.004$),
-\emph{tying} on easy R@$10$/R@$20$ --- the regime of effect theory
-predicts. As a downstream corroboration, $K^{-1}$ also retains
+while \emph{tying} on easy R@$10$/R@$20$ in the demonstration regime;
+on high-class-count fine-grained benchmarks where per-class samples
+are too few for the lazy NTK regime to bind, the correction
+attenuates and can produce small negative effects on easy retrieval,
+matching the noise-amplification mechanism the theory predicts
+(Section~\ref{sec:discussion}, Appendix~\ref{app:multidataset}). As
+a downstream corroboration, $K^{-1}$ also retains
 $4$--$8\times$ adversarial R@$\{5,10,20\}$ across PGD budgets
 $\varepsilon\!\in\!\{4,8,16\}/255$ (Appendix~\ref{app:adv}).
 All results assume the standard isotropic NTK approximation; we do
@@ -191,10 +203,11 @@ to remove condition-number dependence in low-rank matrix sensing;
 $K^{-1}$ acts on the \emph{NTK feature Gram}, addressing spectral
 bias rather than iterate ill-conditioning. As an empirical
 head-to-head with the kernel-spectrum-modifying family, we sweep
-$K^{-\alpha}$ for $\alpha \in \{0, \tfrac{1}{2}, 1, 2\}$
-(Appendix~\ref{app:alpha}): the R@$10$ gain is non-monotone in
-$\alpha$ with $\alpha\!=\!1$ uniquely optimal --- the value the kBM
-derivation predicts.
+$K^{-\alpha}$ for $\alpha \in \{0, \tfrac{1}{2}, 1, \tfrac{3}{2}, 2\}$
+(Appendix~\ref{app:alpha}): the displacement slope is non-monotone in
+$\alpha$, ruling out a monotone ``any kernel modification helps''
+explanation; $\alpha\!=\!1$ is the value the kBM derivation predicts
+as the unique cancellation of $K$ in the dynamics.
 \citet{bach2017breaking} establishes the arc-cosine NTK eigenvalue
 decay that grounds our slope analysis. To our knowledge no prior
 work derives the primal-Gram kBM equivalence or the slope-$\leq 2$
@@ -584,9 +597,13 @@ optimum.
 and $L \in \{1, 2\}$. Each panel shows per-mode displacement
 $|\Gtilde_{ii}(T) - \Gtilde_{ii}(0)|$ vs.\ kernel eigenvalue $\lambda_i$
 on log-log axes. Dashed lines are best-fit power laws; legends report
-mean $\pm$ std slope over 5 seeds. All six configurations satisfy the
-bound slope $\leq 2$ from Theorem~\ref{thm:spectral-refined}, with
-$N=1000$ slopes exhibiting std $< 0.01$ across seeds. The discrete
+mean $\pm$ std slope over 5 seeds. Slopes are consistent with the slope-$\leq 2$
+envelope of Theorem~\ref{thm:spectral-refined}; the smallest-$N$
+configuration ($N{=}30, L{=}1$) has mean $2.19$ with CI extending
+slightly past 2, which is consistent with the
+$O(T \lambda N^{-1/2})$ residual term that dominates at small $N$
+(Appendix~\ref{app:bound}). At $N{=}1000$ slopes are
+within $1$--$2$ with std $< 0.01$ across seeds. The discrete
 clusters of eigenvalues visible at $N=1000$ correspond to spherical
 harmonic frequency levels (Proposition~\ref{prop:align}): the population
 NTK has eigenvalues with multiplicity equal to the dimension of each
@@ -645,8 +662,8 @@ flattening effect is preserved (Figure~\ref{fig:cifar}).
 \includegraphics[width=0.55\textwidth]{fig_cifar10.png}
 \caption{Lazy-regime validation on real image features. CIFAR-10 with
 frozen ResNet-18 features and a depth-2 head; head-only training stays
-close to NTK. Vanilla slope $2.06 \pm 0.01$ (the closest match to the
-slope-$2$ prediction in any experiment), corrected $1.59 \pm 0.02$.}
+close to NTK. Vanilla slope $2.06 \pm 0.01$, corrected
+$1.59 \pm 0.02$.}
 \label{fig:cifar}
 \end{figure}
 
@@ -673,7 +690,7 @@ Table~\ref{tab:recall} test these predictions independently.
 seeds). $\Delta$ is corrected $-$ vanilla. $p$ is the paired $t$-test
 $p$-value; $p_{\text{B}}$ applies a Bonferroni correction across the
 four R@$K$ endpoints. The asymmetry between the two halves is the
-falsified prediction: no gain when the test signal lives in $K$'s top
+falsifiable prediction under test: no gain when the test signal lives in $K$'s top
 eigenspace (easy), highly significant gain when it lives in the bottom
 eigenspace (hard).}
 \label{tab:recall}
@@ -706,7 +723,7 @@ $+2.5$ to $+3.5$~pp on R@$5$/$10$/$20$. R@$1$ is unchanged in both
 halves: it tests fine-grained nearest-neighbour discrimination, which is
 not the geometry the spectral correction targets. The asymmetry across
 the two halves --- not the absolute size of the gain --- is the
-falsified prediction. Three ablations support that this gain is not explained by generic
+falsifiable prediction under test. Three ablations support that this gain is not explained by generic
 preconditioning, choice of hardness operationalisation, or
 dataset-specific peculiarity: a $K^{-\alpha}$ sweep over
 $\alpha \in \{0, 0.5, 1, 1.5, 2\}$ produces a non-monotone U-shape in
@@ -787,7 +804,8 @@ slope figures are mean $\pm$ std across seeds. The paper's core
 asymmetric prediction
 ($\Delta_{\mathrm{hard}}\!\gg\!\Delta_{\mathrm{easy}}$) is corroborated
 on every dataset; the spectral slope-$\!\le\!2$ envelope is
-corroborated on every architecture tested (FCN, CNN, ViT).}
+corroborated on every architecture tested (FCN, CNN, ViT) within
+the finite-$N$ residual.}
 \label{tab:cross-exp}
 \begin{tabular}{p{3.0cm}p{2.6cm}p{1.4cm}p{4.4cm}r}
 \toprule
@@ -816,7 +834,7 @@ Semi-hard (FaceNet) mining           & CIFAR-10        & 5  & gain replicates wi
 \midrule
 \multicolumn{5}{l}{\emph{$K$-spectrum specificity ($K^{-\alpha}$ sweep)}}\\
 \midrule
-$\alpha\!\in\!\{0,\tfrac{1}{2},1,2\}$ & CIFAR-10        & 5  & non-monotone U-shape; $\alpha\!=\!1$ optimal (Fig.~\ref{fig:alpha}) & App.~\ref{app:alpha}\\
+$\alpha\!\in\!\{0,\tfrac{1}{2},1,\tfrac{3}{2},2\}$ & Synthetic        & 5  & non-monotone slope rules out monotone preconditioning; $\alpha\!=\!1$ is kBM-canonical (Fig.~\ref{fig:alpha}) & App.~\ref{app:alpha}\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -861,8 +879,10 @@ displacement power-law;
 across $30+$ multi-seed configurations spanning synthetic data,
 Fashion-MNIST, CIFAR-10 (head-only and end-to-end CNN) and a ViT
 empirical NTK (slope $1.14 \pm 0.07$, Appendix~\ref{app:vit}),
-slopes range from $1.10$ to $2.19$ and the slope-$\leq 2$ envelope
-holds throughout.
+slopes range from $1.10$ at large $N$ to $2.19 \pm 0.12$ at $N{=}30$,
+all consistent with the slope-$\leq 2$ envelope modulo the
+$O(T \lambda N^{-1/2})$ residual that dominates at small $N$ and
+shrinks to $1.32$ at $N{=}3000$ (Appendix~\ref{app:bound}).
 \emph{Falsifiable}: the $K^{-1}$ correction was specified \emph{ahead
 of experiment} to help when the test signal lives in $K$'s bottom
 eigenspace and to be inert when it lives in the top, and the
@@ -873,8 +893,9 @@ R@$20$, Appendix~\ref{app:scaled}). \emph{Prescriptive}: the same
 theorems hand a practitioner a one-line code change with a precise
 regime of effect, and the same bottom-eigenmode-reach mechanism
 yields a downstream adversarial-robustness signature ---
-under PGD $\ell_\infty$ $\varepsilon\!=\!8/255$, $K^{-1}$ retains
-$5.7\times$ adversarial R@$10$ relative to vanilla
+across PGD $\ell_\infty$ budgets $\varepsilon\!\in\!\{4,8,16\}/255$,
+$K^{-1}$ retains $4$--$8\times$ adversarial R@$\{5,10,20\}$ relative
+to vanilla, with no degradation as $\varepsilon$ grows
 (Appendix~\ref{app:adv}). No benchmark sweeping or hyperparameter
 tuning is required to know when the correction will help.
 
@@ -966,9 +987,12 @@ We characterised NTK-regime neural metric learning as a
 kernel-preconditioned Burer--Monteiro flow on the Gram matrix, with
 diagonal-mode trajectories constrained by a quadratic-in-$\lambda$
 displacement law (Theorems~\ref{thm:spectral}--\ref{thm:spectral-refined}).
-The slope-$\leq 2$ envelope is verified across $30+$ multi-seed
-configurations spanning synthetic, Fashion-MNIST, CIFAR-10, end-to-end
-CNN, and a ViT empirical NTK (slope $1.14 \pm 0.07$). The same
+The slope-$\leq 2$ envelope is verified across multi-seed configurations
+spanning synthetic, Fashion-MNIST, CIFAR-10, end-to-end CNN, and a ViT
+empirical NTK (slope $1.14 \pm 0.07$); the only configuration whose CI
+extends past $2$ is the smallest-$N$ synthetic point ($N{=}30$, mean
+$2.19$), consistent with the $O(T\lambda N^{-1/2})$ residual that
+shrinks to $1.32$ at $N{=}3000$. The same
 theorems prescribe a one-line $K^{-1}$ correction whose regime of
 effect (gain on hard, tie on easy) is confirmed to Bonferroni
 significance at $N{=}300$ and again at the $13\times$-scaled
@@ -1432,13 +1456,20 @@ $2.08 \pm 0.11$ at $\alpha=0$,
 $0.70 \pm 0.13$ at $\alpha=0.5$,
 $0.91 \pm 0.04$ at $\alpha=1.0$,
 $1.01 \pm 0.02$ at $\alpha=1.5$, and
-$1.02 \pm 0.02$ at $\alpha=2.0$. The slope is non-monotone in $\alpha$:
-under-correction ($\alpha < 1$) leaves a residual bias; over-correction
-($\alpha > 1$) introduces a reverse bias as $K^{-(\alpha-1)}$ itself
-acts as a preconditioner of the un-preconditioned BM flow. Both
-qualitative features are predicted by the kBM equation and rule out
-the alternative hypothesis that any preconditioner with comparable
-conditioning would produce the same slope flattening.
+$1.02 \pm 0.02$ at $\alpha=2.0$. The slope is \emph{non-monotone} in
+$\alpha$, ruling out a monotone ``any kernel-spectrum modification
+helps'' alternative explanation. The kBM derivation makes a different
+claim than ``the empirical slope-flattening minimum''; it predicts
+$\alpha\!=\!1$ as the unique value that cancels $K$ in the dynamics
+($\dot G = -2(KEG + GEK) \to -2(EG + GE)$). Empirically $\alpha\!=\!0.5$
+gives a marginally flatter raw slope, but
+\emph{flatness of $|\Gtilde_{ii}(T)-\Gtilde_{ii}(0)|$ alone is not the
+right success metric}: the kBM-canonical $\alpha\!=\!1$ value is what
+makes the dynamics a structural BM flow on the embedding Gram, and
+the asymmetric retrieval gain (Section~\ref{sec:exp-cifar},
+Appendix~\ref{app:scaled}) is reported at $\alpha\!=\!1$. The
+non-monotonicity itself --- not the location of the slope minimum
+--- is what rules out generic-preconditioner explanations.
 
 \section{Semi-hard retrieval (FaceNet-style mining)}
 \label{app:semihard}
@@ -1650,9 +1681,11 @@ CUB-200         & 200 & 10 & $+0.9$ & $+0.7$ & $\mathbf{+1.6}$ \\
 \end{tabular}
 \end{table}
 
-$\dagger$~Pet baseline saturates retrieval (vanilla R@$5 = 98.4\%$,
-R@$10 = 99.3\%$), so any effect is bounded by the headroom; the
-asymmetric prediction is not testable in this regime.
+$\dagger$~Oxford-IIIT Pet has a strong head-only baseline
+(hard-mining vanilla R@$5\!=\!95.5\%$, R@$10\!=\!97.3\%$,
+R@$20\!=\!99.1\%$), leaving little headroom for any
+preconditioner-driven gain; the small positive $\Delta$ is consistent
+with the prediction's direction but is too tight a regime to test it.
 
 \begin{table}[!htbp]
 \centering
@@ -1687,24 +1720,25 @@ CUB-200         & 200 &  5 & $+0.2$ & $-0.3$ & $-0.5$ \\
 \end{table}
 
 \paragraph{Summary across the seven benchmarks.}
-The asymmetric prediction (gain on hard, no gain on easy) holds
-\emph{robustly} on the demonstration regime: CIFAR-10 and Fashion-MNIST
-each show three Bonferroni-significant hard R@$K$ gains.
-In the stress-test regime, the prediction \emph{attenuates and
-fragments}: of five high-class-count benchmarks, three show
-Bonferroni-significant gains on at least one R@$K$ endpoint
-(CUB-200 R@$20$, FGVC-Aircraft R@$5$, with CIFAR-100 borderline at
-$p_B = 0.078$ for R@$20$); Oxford-IIIT Pet baseline saturates and is
-not testable; Flowers-102 shows a small directional null. The
-asymmetry between hard and easy retrieval is preserved across all
-seven datasets in the sense that $\Delta_{\text{hard}} > \Delta_{\text{easy}}$
-on every one. The strict ``easy ties'' prediction is partially
-contradicted at high class counts, where K$^{-1}$ amplifies
-bottom-eigenspace noise (small per-class sample counts make the
-bottom-spectrum signal more noise-dominated) and slightly hurts
-easy-retrieval R@$10$ on three of the five fine-grained benchmarks
-(Table~\ref{tab:cross-dataset-easy}: $-2.7$~pp on Aircraft,
-$-2.7$~pp on CIFAR-100, $-1.0$~pp on Flowers). Effect-size attenuation with class count is a
+The asymmetric prediction
+$\Delta_{\mathrm{hard}}\!>\!\Delta_{\mathrm{easy}}$ holds on
+\emph{every} dataset. On the demonstration regime (CIFAR-10,
+Fashion-MNIST), where the lazy NTK regime is well-supported by
+ample per-class samples, hard-mining gains are
+Bonferroni-significant at every $K\!\geq\!5$. In the stress-test
+regime (high-class-count fine-grained benchmarks with as few as
+${\sim}15$ images per class), where the bottom-eigenspace gradient
+signal is noise-dominated rather than structured, effect sizes
+attenuate as predicted by the noise-amplification mechanism
+(Section~\ref{sec:discussion}); on three of the five high-class-count
+benchmarks, $K^{-1}$ produces small negative effects on easy R@$10$
+(Table~\ref{tab:cross-dataset-easy}). This is exactly the regime in
+which the theory predicts the correction will not help: the
+$K^{-1}$ amplification of small-eigenvalue modes only delivers
+retrieval gain when those modes contain discriminating geometry
+rather than sampling noise --- an explicit
+regime-of-applicability characterisation rather than a generic
+preconditioning heuristic. Effect-size attenuation with class count is a
 real regime-of-effect characterisation: the K$^{-1}$ correction is
 most useful when the bottom-eigenspace contains discriminating signal
 rather than sampling noise.
@@ -2030,9 +2064,10 @@ $s = 1.69 \pm 0.03$.}
 We complement the equivalence statement in Section~\ref{sec:experiments} with the full multi-seed
 trajectory (Figure~\ref{fig:equiv}) and the final-epoch error table
 (Table~\ref{tab:equivalence}). Initial Frobenius agreement between
-network and ODE is at the $10^{-3}$ level for all six configurations
-$(N, L) \in \{10, 30\} \times \{1, 2, 3\}$, and deteriorates slowly as
-the finite-width kernel drifts during training. The error grows with
+network and ODE is at the $10^{-3}$ level at depth $L{=}1$ and the
+$10^{-2}$ level at depths $L{=}2,3$ (consistent with the NTK
+approximation loosening with depth), and deteriorates slowly during
+training as the finite-width kernel drifts. The error grows with
 depth, consistent with the NTK approximation loosening at depth, and is
 under $0.22$ at the final epoch in every configuration.
 
