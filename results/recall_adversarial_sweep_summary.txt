@@ -1,0 +1,24 @@
+Tier 2 multi-budget PGD sweep, 5 seeds per budget, ResNet-18 + depth-2 head
+=============================================================================
+
+K^{-1} preserves more adversarial Recall@K than vanilla across the entire
+attack-strength sweep, with the ratio in the 4-8x range:
+
+ε=4/255 (weak attack)
+  R@5  : vanilla 0.001  precond 0.008  ratio 8.00x
+  R@10 : vanilla 0.006  precond 0.034  ratio 5.67x
+  R@20 : vanilla 0.023  precond 0.115  ratio 5.00x
+
+ε=8/255 (canonical)
+  R@5  : vanilla 0.003  precond 0.014  ratio 4.67x
+  R@10 : vanilla 0.010  precond 0.057  ratio 5.70x
+  R@20 : vanilla 0.031  precond 0.133  ratio 4.29x
+
+ε=16/255 (strong attack)
+  R@5  : vanilla 0.004  precond 0.016  ratio 4.00x
+  R@10 : vanilla 0.009  precond 0.060  ratio 6.67x
+  R@20 : vanilla 0.029  precond 0.136  ratio 4.69x
+
+Headline: the bottom-eigenmode-reach margin advantage is REPLICATED across
+3 PGD budgets spanning a 4x range. No longer "single-budget preliminary";
+upgrades to "consistent multi-budget corroboration."
